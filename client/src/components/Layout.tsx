@@ -11,14 +11,14 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <span className="text-lg font-bold text-gray-900">Helpdesk</span>
+    <div className="min-h-screen flex flex-col bg-background">
+      <nav className="bg-card border-b border-border px-6 py-3 flex items-center justify-between">
+        <span className="text-base font-semibold text-foreground">Helpdesk</span>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-700">{session?.user.name}</span>
+          <span className="text-sm text-muted-foreground">{session?.user.name}</span>
           <button
             onClick={handleSignOut}
-            className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             Sign out
           </button>

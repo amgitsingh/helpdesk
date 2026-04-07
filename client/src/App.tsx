@@ -1,34 +1,18 @@
-import { useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route } from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
+import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-function App() {
-  const [status, setStatus] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status))
-      .catch(() => setStatus('error'));
-  }, []);
-
+export default function App() {
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <div className="p-8">
-            <h1 className="text-2xl font-bold mb-4">Helpdesk</h1>
-            <p>
-              API status:{' '}
-              <span className={status === 'ok' ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                {status ?? 'checking...'}
-              </span>
-            </p>
-          </div>
-        }
-      />
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<Layout />}>
+          <Route path="/" element={<HomePage />} />
+        </Route>
+      </Route>
     </Routes>
   );
 }
-
-export default App;

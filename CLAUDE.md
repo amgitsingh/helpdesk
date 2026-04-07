@@ -6,15 +6,15 @@ An AI-powered ticket management system. Support emails are ingested, classified,
 ## Monorepo Structure
 ```
 helpdesk/
-├── client/   # React + TypeScript + Vite + React Router + Tailwind CSS
+├── client/   # React + TypeScript + Vite + React Router + Tailwind CSS v4 + shadcn/ui
 ├── server/   # Node.js + Express + TypeScript
 ```
 
 ## Tech Stack
-- **Frontend:** React 18, TypeScript, React Router v6, Tailwind CSS, shadcn/ui
+- **Frontend:** React 18, TypeScript, React Router v6, Tailwind CSS v4, shadcn/ui (base-nova, neutral)
 - **Backend:** Node.js, Express, TypeScript
 - **Database:** PostgreSQL with Prisma ORM
-- **Auth:** Database-backed sessions (express-session + connect-pg-simple)
+- **Auth:** better-auth
 - **AI:** Claude API (Anthropic) — classification, summaries, suggested replies
 - **Email:** SendGrid or Mailgun (inbound webhook + outbound sending)
 - **Deployment:** Docker on Railway
@@ -38,6 +38,33 @@ npm run dev:client   # client only
 - **Ticket** — status: `open | resolved | closed` — category: `General Question | Technical Question | Refund Request`
 - **Message** — belongs to a ticket, sender is `agent | ai | customer`
 - **User** — role: `admin | agent`; system is seeded with one admin on deploy
+
+## Authentication (better-auth)
+
+### Server
+- Auth instance: `server/src/lib/auth.ts` — uses `prismaAdapter`, email/password only, **sign-up is disabled** (agents are created by admins)
+- Auth routes: mounted at `/api/auth/*` via `toNodeHandler(auth)` — must be registered **before** `express.json()`
+- Protect routes with the `requireAuth` middleware (`server/src/middleware/requireAuth.ts`)
+  - Calls `auth.api.getSession()` and attaches session to `res.locals.session`
+  - Returns 401 if no valid session
+- User has an additional `role` field (`admin | agent`), not settable by the client
+
+### Client
+- Auth client: `client/src/lib/auth.ts` — `createAuthClient()` from `better-auth/react`
+- Sign in: `authClient.signIn.email({ email, password })`
+- Sign out: `authClient.signOut()`
+- Session: `authClient.useSession()` — returns `{ data: session, isPending }`
+- Protected routes use `<ProtectedRoute>` which checks the session and redirects to `/login`
+
+### Env vars required
+- `BETTER_AUTH_URL` — server base URL (e.g. `http://localhost:5000`)
+- `BETTER_AUTH_SECRET` — random secret string
+- `CLIENT_URL` — client origin for CORS (e.g. `http://localhost:5173`)
+
+## Frontend Notes
+- **Tailwind v4** — integrated via `@tailwindcss/vite` plugin (not PostCSS). CSS vars mapped to utilities via `@theme inline` in `index.css`.
+- **shadcn/ui** — components in `client/src/components/ui/`. Add via `npx shadcn@latest add <component>` from `client/`. Path alias `@/` → `src/`.
+- **Forms** — use `defaultValues` in every `useForm` call (Zod v4 rejects `undefined` for string fields). Input component uses `React.forwardRef` for react-hook-form ref compatibility.
 
 ## MCP Tools
 - **Context7** (`use context7`) — fetches up-to-date library documentation. Use this before writing code that depends on a specific library to get the latest API and avoid using deprecated patterns.

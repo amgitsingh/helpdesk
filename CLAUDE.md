@@ -50,11 +50,31 @@ npm run dev:client   # client only
 - User has an additional `role` field (`admin | agent`), not settable by the client
 
 ### Client
-- Auth client: `client/src/lib/auth.ts` — `createAuthClient()` from `better-auth/react`
 - Sign in: `authClient.signIn.email({ email, password })`
 - Sign out: `authClient.signOut()`
 - Session: `authClient.useSession()` — returns `{ data: session, isPending }`
-- Protected routes use `<ProtectedRoute>` which checks the session and redirects to `/login`
+
+### Route Protection
+Wrap routes in `App.tsx` using these outlet-based guard components:
+
+| Component | File | Redirects to | When |
+|---|---|---|---|
+| `<ProtectedRoute>` | `client/src/components/ProtectedRoute.tsx` | `/login` | no valid session |
+| `<AdminRoute>` | `client/src/components/AdminRoute.tsx` | `/` | session exists but role ≠ `admin` |
+
+Nesting pattern — admin routes must be inside both guards:
+```tsx
+<Route element={<ProtectedRoute />}>
+  <Route element={<Layout />}>
+    <Route path="/" element={<HomePage />} />          {/* any authenticated user */}
+    <Route element={<AdminRoute />}>
+      <Route path="/users" element={<UsersPage />} />  {/* admins only */}
+    </Route>
+  </Route>
+</Route>
+```
+
+Nav links visible only to admins: check `session?.user.role === "admin"` inline in `Layout.tsx`.
 
 ### Env vars required
 - `BETTER_AUTH_URL` — server base URL (e.g. `http://localhost:5000`)

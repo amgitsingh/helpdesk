@@ -16,9 +16,14 @@ async function hashPassword(password: string): Promise<string> {
   return `${salt}:${key.toString('hex')}`;
 }
 
-const email = process.env.SEED_EMAIL ?? 'admin@example.com';
-const password = process.env.SEED_PASSWORD ?? 'password123';
+const email = process.env.SEED_EMAIL;
+const password = process.env.SEED_PASSWORD;
 const name = process.env.SEED_NAME ?? 'Admin';
+
+if (!email || !password) {
+  console.error('SEED_EMAIL and SEED_PASSWORD must be set in environment');
+  process.exit(1);
+}
 
 async function seed() {
   const existing = await prisma.user.findUnique({ where: { email } });

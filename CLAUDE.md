@@ -29,35 +29,6 @@ npm run dev:server   # server only
 npm run dev:client   # client only
 ```
 
-## E2E Testing (Playwright)
-```bash
-npm run test:e2e         # run all tests (headless)
-npm run test:e2e:ui      # open Playwright UI mode
-npm run test:e2e:report  # view last HTML report
-```
-
-- Tests live in `e2e/tests/`
-- Config: `playwright.config.ts` (root)
-- Env vars: `.env.test` (root) — loaded by playwright.config.ts via dotenv
-- **Test server runs on port 5001** to avoid conflicts with the dev server (port 5000)
-- **Test database:** `helpdesk_test` — completely separate from the dev DB
-- `e2e/global-setup.ts` — runs `prisma migrate reset --force` then seeds a fresh admin on every test run
-- `e2e/global-teardown.ts` — no-op (reset happens at start of each run)
-- Playwright passes `NODE_ENV=test` and test DB credentials to the server webServer; dotenv does not override already-set env vars
-- Vite proxy target reads `API_PORT` env var (defaults to `5000`); Playwright sets `API_PORT=5001` for the client webServer
-
-### Test env vars (`.env.test`)
-| Variable | Purpose |
-|---|---|
-| `TEST_DATABASE_URL` | Connection string for `helpdesk_test` |
-| `TEST_PORT` | Server port for test runs (`5001`) |
-| `TEST_BETTER_AUTH_SECRET` | Auth secret for test server (min 32 chars) |
-| `TEST_BETTER_AUTH_URL` | Server base URL for test (`http://localhost:5001`) |
-| `TEST_CLIENT_URL` | Client origin for CORS in test |
-| `TEST_SEED_EMAIL` | Admin email seeded into test DB |
-| `TEST_SEED_PASSWORD` | Admin password seeded into test DB |
-| `TEST_SEED_NAME` | Admin display name |
-
 ## Key Conventions
 - All API routes are prefixed with `/api`
 - Vite proxies `/api/*` to `http://localhost:${API_PORT ?? 5000}` — no CORS issues in dev
@@ -129,5 +100,6 @@ Nav links visible only to admins: check `session?.user.role === "admin"` inline 
 - **shadcn/ui** — components in `client/src/components/ui/`. Add via `npx shadcn@latest add <component>` from `client/`. Path alias `@/` → `src/`.
 - **Forms** — use `defaultValues` in every `useForm` call (Zod v4 rejects `undefined` for string fields). Input component uses `React.forwardRef` for react-hook-form ref compatibility.
 
-## MCP Tools
+## Agents
 - **Context7** (`use context7`) — fetches up-to-date library documentation. Use this before writing code that depends on a specific library to get the latest API and avoid using deprecated patterns.
+- **e2e-test-writer** — writes Playwright E2E tests. Use this agent whenever E2E tests need to be written. Do not write Playwright tests directly; always delegate to this agent. It knows the full test infrastructure (ports, env vars, global setup, auth fixtures, POM conventions).

@@ -25,21 +25,24 @@ if (!email || !password) {
   process.exit(1);
 }
 
+const seedEmail = email as string;
+const seedPassword = password as string;
+
 async function seed() {
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await prisma.user.findUnique({ where: { email: seedEmail } });
 
   if (existing) {
-    console.log(`User ${email} already exists — skipping.`);
+    console.log(`User ${seedEmail} already exists — skipping.`);
     await prisma.$disconnect();
     return;
   }
 
-  const hashed = await hashPassword(password);
+  const hashed = await hashPassword(seedPassword);
 
   const user = await prisma.user.create({
     data: {
       name,
-      email,
+      email: seedEmail,
       emailVerified: true,
       role: Role.admin,
     },
@@ -54,7 +57,7 @@ async function seed() {
     },
   });
 
-  console.log(`Created user: ${email} (role: admin)`);
+  console.log(`Created user: ${seedEmail} (role: admin)`);
   await prisma.$disconnect();
 }
 

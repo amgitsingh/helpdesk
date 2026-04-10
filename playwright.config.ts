@@ -11,9 +11,12 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   reporter: 'html',
+  expect: { timeout: 10_000 },
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: process.env.TEST_CLIENT_URL ?? 'http://localhost:5174',
     trace: 'on-first-retry',
+    navigationTimeout: 20_000,
+    actionTimeout: 10_000,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
@@ -24,7 +27,7 @@ export default defineConfig({
     {
       command: 'npm run dev:server',
       url: 'http://localhost:5001/api/health',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       env: {
         PORT: process.env.TEST_PORT!,
         NODE_ENV: 'test',
@@ -36,10 +39,11 @@ export default defineConfig({
     },
     {
       command: 'npm run dev:client',
-      url: 'http://localhost:5173',
-      reuseExistingServer: !process.env.CI,
+      url: process.env.TEST_CLIENT_URL ?? 'http://localhost:5174',
+      reuseExistingServer: false,
       env: {
         API_PORT: process.env.TEST_PORT!,
+        CLIENT_PORT: '5174',
       },
     },
   ],

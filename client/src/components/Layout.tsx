@@ -14,7 +14,7 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col bg-background">
       <nav className="bg-card border-b border-border px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <span className="text-base font-semibold text-foreground">Helpdesk</span>
+          <Link to="/" className="text-base font-semibold text-foreground">Helpdesk</Link>
           {session?.user.role === "admin" && (
             <Link to="/users" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Users

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -36,7 +37,18 @@ export default function UsersPage() {
           <CardTitle>Users</CardTitle>
         </CardHeader>
         <CardContent>
-          {isPending && <p className="text-muted-foreground text-sm">Loading…</p>}
+          {isPending && (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex gap-4">
+                  <Skeleton className="h-5 w-1/4" />
+                  <Skeleton className="h-5 w-1/3" />
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-5 w-20" />
+                </div>
+              ))}
+            </div>
+          )}
           {isError && <p className="text-destructive text-sm">Failed to load users.</p>}
           {!isPending && !isError && (
             <Table>

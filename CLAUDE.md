@@ -12,7 +12,7 @@ helpdesk/
 ```
 
 ## Tech Stack
-- **Frontend:** React 18, TypeScript, React Router v6, Tailwind CSS v4, shadcn/ui (base-nova, neutral)
+- **Frontend:** React 18, TypeScript, React Router v6, Tailwind CSS v4, shadcn/ui (base-nova, neutral), TanStack Query, axios
 - **Backend:** Node.js, Express, TypeScript
 - **Database:** PostgreSQL with Prisma ORM
 - **Auth:** better-auth
@@ -99,6 +99,7 @@ Nav links visible only to admins: check `session?.user.role === "admin"` inline 
 - **Tailwind v4** — integrated via `@tailwindcss/vite` plugin (not PostCSS). CSS vars mapped to utilities via `@theme inline` in `index.css`.
 - **shadcn/ui** — components in `client/src/components/ui/`. Add via `npx shadcn@latest add <component>` from `client/`. Path alias `@/` → `src/`.
 - **Forms** — use `defaultValues` in every `useForm` call (Zod v4 rejects `undefined` for string fields). Input component uses `React.forwardRef` for react-hook-form ref compatibility.
+- **Data fetching** — use **TanStack Query** (`useQuery`, `useMutation`) for all server state. Use **axios** for HTTP calls (installed in client). Always pass `withCredentials: true` to axios so cookies are sent. Never use raw `fetch` for API calls.
 
 ## Agents
 - **Context7** (`use context7`) — fetches up-to-date library documentation. Use this before writing code that depends on a specific library to get the latest API and avoid using deprecated patterns.

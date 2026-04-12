@@ -6,11 +6,12 @@ dotenv.config({ path: path.resolve(__dirname, '.env.test') });
 
 export default defineConfig({
   testDir: './e2e/tests',
+  outputDir: './e2e/test-results',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: 'html',
+  reporter: [['html', { outputFolder: './e2e/playwright-report' }]],
   expect: { timeout: 10_000 },
   use: {
     baseURL: process.env.TEST_CLIENT_URL ?? 'http://localhost:5174',

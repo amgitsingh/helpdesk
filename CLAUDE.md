@@ -6,6 +6,7 @@ An AI-powered ticket management system. Support emails are ingested, classified,
 ## Monorepo Structure
 ```
 helpdesk/
+├── core/     # Shared TypeScript — Zod schemas, inferred types (package: @helpdesk/core)
 ├── client/   # React + TypeScript + Vite + React Router + Tailwind CSS v4 + shadcn/ui
 ├── server/   # Node.js + Express + TypeScript
 ├── e2e/      # Playwright end-to-end tests
@@ -39,7 +40,7 @@ npm run dev:client   # client only
 ## Domain Model
 - **Ticket** — status: `open | resolved | closed` — category: `General Question | Technical Question | Refund Request`
 - **Message** — belongs to a ticket, sender is `agent | ai | customer`
-- **User** — role: `admin | agent`; system is seeded with one admin on deploy
+- **User** — role: `admin | agent`; system is seeded with one admin on deploy; users created via the API always get `Role.agent` — import `Role` from `server/src/generated/prisma/client`
 
 ## Authentication (better-auth)
 
@@ -89,6 +90,20 @@ Nav links visible only to admins: check `session?.user.role === "admin"` inline 
 - `CLIENT_URL` — client origin for CORS (e.g. `http://localhost:5173`)
 - `DATABASE_URL` — PostgreSQL connection string (validated at startup)
 - Startup guard in `server/src/index.ts` exits the process if any required env var is missing or the secret is too short
+
+## Backend Conventions
+- **Express 5** is used — async route handlers that throw (or return a rejected promise) are automatically forwarded to the error handler. **Do not wrap route handlers in try/catch** unless you need to handle a specific error locally.
+
+## Shared Schemas (`core` package)
+- All Zod schemas that are used by **both** client and server live in `core/src/schemas/` and are exported from `core/src/index.ts`
+- Import them in either workspace as `import { mySchema, type MyInput } from '@helpdesk/core'`
+- The `core` package ships TypeScript source directly (no build step) — Vite and ts-node both resolve it via the `"main"` field in `core/package.json`
+- Always export the inferred type alongside the schema: `export type MyInput = z.infer<typeof mySchema>`
+- Schemas that are only used in one workspace can stay local to that workspace
+
+## Backend Validation
+- Use **Zod** for all request body validation in API routes — prefer schemas from `@helpdesk/core` when the same schema is needed on the client
+- Parse with `schema.safeParse(req.body)` and return `400` with `result.error.issues[0].message` on failure
 
 ## Security
 - `helmet` is applied as the first middleware in `server/src/app.ts` (sets X-Frame-Options, HSTS, CSP, etc.)

@@ -1,10 +1,20 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { randomBytes, scrypt } from 'crypto';
-import { createUserSchema } from '@helpdesk/core';
+import { type ZodType } from 'zod';
+import { createUserSchema, editUserSchema } from '@helpdesk/core';
 import { requireAuth } from '../middleware/requireAuth';
 import { requireAdmin } from '../middleware/requireAdmin';
 import prisma from '../lib/prisma';
 import { Role } from '../generated/prisma/client';
+
+function parseBody<T>(schema: ZodType<T>, body: unknown, res: Response): T | null {
+  const result = schema.safeParse(body);
+  if (!result.success) {
+    res.status(400).json({ error: result.error.issues[0].message });
+    return null;
+  }
+  return result.data;
+}
 
 const router = Router();
 
@@ -37,13 +47,10 @@ router.get('/', requireAuth, requireAdmin, async (_req, res) => {
 });
 
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
-  const result = createUserSchema.safeParse(req.body);
-  if (!result.success) {
-    res.status(400).json({ error: result.error.issues[0].message });
-    return;
-  }
+  const data = parseBody(createUserSchema, req.body, res);
+  if (!data) return;
 
-  const { name, email, password } = result.data;
+  const { name, email, password } = data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -68,6 +75,45 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
   });
 
   res.status(201).json(user);
+});
+
+router.patch('/:id', requireAuth, requireAdmin, async (req, res) => {
+  const id = req.params['id'] as string;
+
+  const data = parseBody(editUserSchema, req.body, res);
+  if (!data) return;
+
+  const { name, email, password } = data;
+
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  if (email !== existing.email) {
+    const conflict = await prisma.user.findUnique({ where: { email } });
+    if (conflict) {
+      res.status(409).json({ error: 'A user with that email already exists' });
+      return;
+    }
+  }
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: { name, email },
+    select: { id: true, name: true, email: true, role: true, createdAt: true },
+  });
+
+  if (password) {
+    const hashed = await hashPassword(password);
+    await prisma.account.updateMany({
+      where: { userId: id, providerId: 'credential' },
+      data: { password: hashed },
+    });
+  }
+
+  res.json(user);
 });
 
 export default router;

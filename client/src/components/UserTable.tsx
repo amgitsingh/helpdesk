@@ -1,3 +1,5 @@
+import { Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -20,9 +22,10 @@ type Props = {
   users: User[];
   isPending: boolean;
   isError: boolean;
+  onEdit: (user: User) => void;
 };
 
-export function UserTable({ users, isPending, isError }: Props) {
+export function UserTable({ users, isPending, isError, onEdit }: Props) {
   if (isPending) {
     return (
       <div className="space-y-3">
@@ -50,12 +53,13 @@ export function UserTable({ users, isPending, isError }: Props) {
           <TableHead>Email</TableHead>
           <TableHead>Role</TableHead>
           <TableHead>Joined</TableHead>
+          <TableHead className="w-12" />
         </TableRow>
       </TableHeader>
       <TableBody>
         {users.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
+            <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
               No users found.
             </TableCell>
           </TableRow>
@@ -77,6 +81,16 @@ export function UserTable({ users, isPending, isError }: Props) {
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {new Date(user.createdAt).toLocaleDateString()}
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onEdit(user)}
+                  aria-label={`Edit ${user.name}`}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))

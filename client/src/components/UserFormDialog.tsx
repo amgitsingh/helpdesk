@@ -1,8 +1,9 @@
+import { useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createUserSchema, type CreateUserInput } from "@helpdesk/core";
+import { createUserSchema, editUserSchema, type EditUserInput } from "@helpdesk/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import type { User } from "@/components/UserTable";
 
-async function createUser(values: CreateUserInput): Promise<User> {
+async function submitUser(user: User | undefined, values: EditUserInput): Promise<User> {
+  if (user) {
+    const { data } = await axios.patch<User>(`/api/users/${user.id}`, values, {
+      withCredentials: true,
+    });
+    return data;
+  }
   const { data } = await axios.post<User>("/api/users", values, { withCredentials: true });
   return data;
 }
@@ -23,9 +30,11 @@ async function createUser(values: CreateUserInput): Promise<User> {
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  user?: User; // undefined = create mode, User = edit mode
 };
 
-export function CreateUserDialog({ open, onOpenChange }: Props) {
+export function UserFormDialog({ open, onOpenChange, user }: Props) {
+  const isEditing = user !== undefined;
   const queryClient = useQueryClient();
 
   const {
@@ -33,25 +42,31 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CreateUserInput>({
-    resolver: zodResolver(createUserSchema),
+  } = useForm<EditUserInput>({
+    resolver: zodResolver(isEditing ? editUserSchema : createUserSchema),
     defaultValues: { name: "", email: "", password: "" },
   });
 
+  useEffect(() => {
+    if (open) {
+      reset(
+        isEditing
+          ? { name: user.name, email: user.email, password: "" }
+          : { name: "", email: "", password: "" },
+      );
+    }
+  }, [open, user, isEditing, reset]);
+
   const mutation = useMutation({
-    mutationFn: createUser,
+    mutationFn: (values: EditUserInput) => submitUser(user, values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      reset();
       onOpenChange(false);
     },
   });
 
   function handleOpenChange(next: boolean) {
-    if (!next) {
-      reset();
-      mutation.reset();
-    }
+    if (!next) mutation.reset();
     onOpenChange(next);
   }
 
@@ -59,12 +74,21 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create New User</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit User" : "Create New User"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="pt-2 space-y-4" noValidate>
+        <form
+          onSubmit={handleSubmit((v) => mutation.mutate(v))}
+          className="pt-2 space-y-4"
+          noValidate
+        >
           <div className="space-y-1">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="Jane Smith" aria-invalid={!!errors.name} {...register("name")} />
+            <Input
+              id="name"
+              placeholder="Jane Smith"
+              aria-invalid={!!errors.name}
+              {...register("name")}
+            />
             {errors.name && (
               <p className="text-xs text-destructive">{errors.name.message}</p>
             )}
@@ -84,7 +108,14 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
             )}
           </div>
           <div className="space-y-1">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">
+              Password{" "}
+              {isEditing && (
+                <span className="text-muted-foreground font-normal">
+                  (leave blank to keep current)
+                </span>
+              )}
+            </Label>
             <Input
               id="password"
               type="password"
@@ -100,7 +131,10 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
           {mutation.isError && (
             <p className="text-xs text-destructive">
               {(mutation.error as { response?: { data?: { error?: string } } })
-                ?.response?.data?.error ?? "Failed to create user. Please try again."}
+                ?.response?.data?.error ??
+                (isEditing
+                  ? "Failed to update user. Please try again."
+                  : "Failed to create user. Please try again.")}
             </p>
           )}
           <DialogFooter>
@@ -108,7 +142,9 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
               Cancel
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Creating..." : "Create User"}
+              {mutation.isPending
+                ? isEditing ? "Saving..." : "Creating..."
+                : isEditing ? "Save Changes" : "Create User"}
             </Button>
           </DialogFooter>
         </form>

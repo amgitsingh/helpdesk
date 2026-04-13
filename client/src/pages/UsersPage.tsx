@@ -4,7 +4,7 @@ import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserTable, type User } from "@/components/UserTable";
-import { CreateUserDialog } from "@/components/CreateUserDialog";
+import { UserFormDialog } from "@/components/UserFormDialog";
 
 async function fetchUsers(): Promise<User[]> {
   const { data } = await axios.get<User[]>("/api/users", { withCredentials: true });
@@ -12,28 +12,53 @@ async function fetchUsers(): Promise<User[]> {
 }
 
 export default function UsersPage() {
-  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
 
   const { data: users = [], isPending, isError } = useQuery({
     queryKey: ["users"],
     queryFn: fetchUsers,
   });
 
+  function openCreate() {
+    setEditingUser(undefined);
+    setDialogOpen(true);
+  }
+
+  function openEdit(user: User) {
+    setEditingUser(user);
+    setDialogOpen(true);
+  }
+
+  function handleOpenChange(open: boolean) {
+    setDialogOpen(open);
+    if (!open) setEditingUser(undefined);
+  }
+
   return (
     <div className="max-w-4xl p-6 mx-auto">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Users</CardTitle>
-          <Button size="sm" onClick={() => setOpen(true)}>
+          <Button size="sm" onClick={openCreate}>
             New User
           </Button>
         </CardHeader>
         <CardContent>
-          <UserTable users={users} isPending={isPending} isError={isError} />
+          <UserTable
+            users={users}
+            isPending={isPending}
+            isError={isError}
+            onEdit={openEdit}
+          />
         </CardContent>
       </Card>
 
-      <CreateUserDialog open={open} onOpenChange={setOpen} />
+      <UserFormDialog
+        open={dialogOpen}
+        onOpenChange={handleOpenChange}
+        user={editingUser}
+      />
     </div>
   );
 }

@@ -101,6 +101,16 @@ Nav links visible only to admins: check `session?.user.role === "admin"` inline 
 - **Forms** — use `defaultValues` in every `useForm` call (Zod v4 rejects `undefined` for string fields). Input component uses `React.forwardRef` for react-hook-form ref compatibility.
 - **Data fetching** — use **TanStack Query** (`useQuery`, `useMutation`) for all server state. Use **axios** for HTTP calls (installed in client). Always pass `withCredentials: true` to axios so cookies are sent. Never use raw `fetch` for API calls.
 
+## Component Testing
+- **Framework:** Vitest + React Testing Library (`@testing-library/react`, `@testing-library/jest-dom`)
+- **Test files:** co-located with the component, e.g. `src/pages/UsersPage.test.tsx`
+- **Run tests:** `npm test --workspace=client` (single run) · `npm run test:watch --workspace=client` (watch mode)
+- **Test environment:** jsdom, pool: vmThreads (required for Windows compatibility)
+- **Shared utilities:** `src/test/renderWithClient.tsx` — wraps UI in a fresh `QueryClient`; import via `@/test/renderWithClient`. Use this for any component that uses TanStack Query.
+- **Mocking axios:** use `vi.mock('axios')` + `vi.mocked(axios)` at the top of the test file; mock `axios.get` per test
+- **Query client config:** always set `retry: false` in test `QueryClient` to prevent retries from slowing tests down
+- **Setup file:** `src/test/setup.ts` — imports `@testing-library/jest-dom` matchers globally; already wired up via `vite.config.ts`
+
 ## Agents
 - **Context7** (`use context7`) — fetches up-to-date library documentation. Use this before writing code that depends on a specific library to get the latest API and avoid using deprecated patterns.
 - **e2e-test-writer** — writes Playwright E2E tests. Use this agent whenever E2E tests need to be written. Do not write Playwright tests directly; always delegate to this agent. It knows the full test infrastructure (ports, env vars, global setup, auth fixtures, POM conventions).

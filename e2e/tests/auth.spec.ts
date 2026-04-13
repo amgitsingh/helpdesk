@@ -347,7 +347,7 @@ adminTest.describe('Admin-only routes — admin access', () => {
     await page.goto('/users');
 
     await expect(page).toHaveURL('/users');
-    await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible();
+    await expect(page.locator('[data-slot="card-title"]', { hasText: 'Users' })).toBeVisible();
   });
 
   adminTest('admin sees the "Users" nav link', async ({ page }) => {
@@ -364,7 +364,7 @@ adminTest.describe('Admin-only routes — admin access', () => {
 
       await expect(page).toHaveURL('/users');
       await expect(
-        page.getByRole('heading', { name: 'Users' }),
+        page.locator('[data-slot="card-title"]', { hasText: 'Users' }),
       ).toBeVisible();
     },
   );

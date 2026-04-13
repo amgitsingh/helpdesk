@@ -61,10 +61,10 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Create New User</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="pt-2 space-y-4">
+        <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="pt-2 space-y-4" noValidate>
           <div className="space-y-1">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="Jane Smith" {...register("name")} />
+            <Input id="name" placeholder="Jane Smith" aria-invalid={!!errors.name} {...register("name")} />
             {errors.name && (
               <p className="text-xs text-destructive">{errors.name.message}</p>
             )}
@@ -76,6 +76,7 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
               type="email"
               placeholder="jane@example.com"
               autoComplete="off"
+              aria-invalid={!!errors.email}
               {...register("email")}
             />
             {errors.email && (
@@ -89,6 +90,7 @@ export function CreateUserDialog({ open, onOpenChange }: Props) {
               type="password"
               placeholder="••••••••"
               autoComplete="new-password"
+              aria-invalid={!!errors.password}
               {...register("password")}
             />
             {errors.password && (

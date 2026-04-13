@@ -34,6 +34,7 @@ async function hashPassword(password: string): Promise<string> {
 
 router.get('/', requireAuth, requireAdmin, async (_req, res) => {
   const users = await prisma.user.findMany({
+    where: { deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -85,7 +86,7 @@ router.patch('/:id', requireAuth, requireAdmin, async (req, res) => {
 
   const { name, email, password } = data;
 
-  const existing = await prisma.user.findUnique({ where: { id } });
+  const existing = await prisma.user.findUnique({ where: { id, deletedAt: null } });
   if (!existing) {
     res.status(404).json({ error: 'User not found' });
     return;
@@ -114,6 +115,27 @@ router.patch('/:id', requireAuth, requireAdmin, async (req, res) => {
   }
 
   res.json(user);
+});
+
+router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
+  const id = req.params['id'] as string;
+
+  const existing = await prisma.user.findUnique({ where: { id, deletedAt: null } });
+  if (!existing) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  if (existing.role === Role.admin) {
+    res.status(403).json({ error: 'Admin users cannot be deleted' });
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({ where: { id }, data: { deletedAt: new Date() } }),
+    prisma.session.deleteMany({ where: { userId: id } }),
+  ]);
+  res.status(204).send();
 });
 
 export default router;

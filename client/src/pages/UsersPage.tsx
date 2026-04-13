@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserTable, type User } from "@/components/UserTable";
 import { UserFormDialog } from "@/components/UserFormDialog";
+import { DeleteUserDialog } from "@/components/DeleteUserDialog";
 
 async function fetchUsers(): Promise<User[]> {
   const { data } = await axios.get<User[]>("/api/users", { withCredentials: true });
@@ -14,6 +15,7 @@ async function fetchUsers(): Promise<User[]> {
 export default function UsersPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
   const { data: users = [], isPending, isError } = useQuery({
     queryKey: ["users"],
@@ -50,6 +52,7 @@ export default function UsersPage() {
             isPending={isPending}
             isError={isError}
             onEdit={openEdit}
+            onDelete={setDeletingUser}
           />
         </CardContent>
       </Card>
@@ -59,6 +62,7 @@ export default function UsersPage() {
         onOpenChange={handleOpenChange}
         user={editingUser}
       />
+      <DeleteUserDialog user={deletingUser} onClose={() => setDeletingUser(null)} />
     </div>
   );
 }

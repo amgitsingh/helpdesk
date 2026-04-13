@@ -5,6 +5,7 @@ import axios from 'axios';
 import { UserFormDialog } from './UserFormDialog';
 import { renderWithClient } from '@/test/renderWithClient';
 import type { User } from './UserTable';
+import { Role } from '@helpdesk/core';
 
 vi.mock('axios');
 const mockedAxios = vi.mocked(axios);
@@ -13,7 +14,7 @@ const existingUser: User = {
   id: '1',
   name: 'Jane Smith',
   email: 'jane@example.com',
-  role: 'agent',
+  role: Role.agent,
   createdAt: '2024-01-15T00:00:00.000Z',
 };
 

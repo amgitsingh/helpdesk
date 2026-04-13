@@ -1,4 +1,5 @@
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import { Role } from "@helpdesk/core";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -14,7 +15,7 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "agent";
+  role: Role;
   createdAt: string;
 };
 
@@ -23,9 +24,10 @@ type Props = {
   isPending: boolean;
   isError: boolean;
   onEdit: (user: User) => void;
+  onDelete: (user: User) => void;
 };
 
-export function UserTable({ users, isPending, isError, onEdit }: Props) {
+export function UserTable({ users, isPending, isError, onEdit, onDelete }: Props) {
   if (isPending) {
     return (
       <div className="space-y-3">
@@ -71,7 +73,7 @@ export function UserTable({ users, isPending, isError, onEdit }: Props) {
               <TableCell>
                 <span
                   className={
-                    user.role === "admin"
+                    user.role === Role.admin
                       ? "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                       : "inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
                   }
@@ -83,14 +85,25 @@ export function UserTable({ users, isPending, isError, onEdit }: Props) {
                 {new Date(user.createdAt).toLocaleDateString()}
               </TableCell>
               <TableCell>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onEdit(user)}
-                  aria-label={`Edit ${user.name}`}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
+                <div className="flex">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEdit(user)}
+                    aria-label={`Edit ${user.name}`}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDelete(user)}
+                    disabled={user.role === Role.admin}
+                    aria-label={`Delete ${user.name}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))

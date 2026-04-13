@@ -82,7 +82,7 @@ Nesting pattern — admin routes must be inside both guards:
 </Route>
 ```
 
-Nav links visible only to admins: check `session?.user.role === "admin"` inline in `Layout.tsx`.
+Nav links visible only to admins: check `session?.user.role === Role.admin` inline in `Layout.tsx`.
 
 ### Env vars required
 - `BETTER_AUTH_URL` — server base URL (e.g. `http://localhost:5000`)
@@ -93,6 +93,12 @@ Nav links visible only to admins: check `session?.user.role === "admin"` inline 
 
 ## Backend Conventions
 - **Express 5** is used — async route handlers that throw (or return a rejected promise) are automatically forwarded to the error handler. **Do not wrap route handlers in try/catch** unless you need to handle a specific error locally.
+
+## Role Enum
+- The `Role` const and type live in `core/src/enums.ts` and are exported from `@helpdesk/core`
+- **Always import `Role` from `@helpdesk/core`** — never use magic strings `"admin"` or `"agent"` anywhere in the client or server
+- Usage: `import { Role } from '@helpdesk/core'` → `Role.admin`, `Role.agent`
+- The server also has a `Role` enum in `server/src/generated/prisma/client` — use the Prisma one only inside Prisma calls; for all other logic (route guards, middleware, comparisons) use the `@helpdesk/core` one
 
 ## Shared Schemas (`core` package)
 - All Zod schemas that are used by **both** client and server live in `core/src/schemas/` and are exported from `core/src/index.ts`

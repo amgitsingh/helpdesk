@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth';
+import { createAuthMiddleware, APIError } from 'better-auth/api';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import prisma from './prisma';
 import { Role } from '../generated/prisma/client';
@@ -18,6 +19,22 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== '/sign-in/email') return;
+      const email = ctx.body?.email as string | undefined;
+      if (!email) return;
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { deletedAt: true },
+      });
+      if (user?.deletedAt) {
+        throw new APIError('UNAUTHORIZED', {
+          message: 'Your account has been deactivated.',
+        });
+      }
+    }),
   },
   user: {
     additionalFields: {

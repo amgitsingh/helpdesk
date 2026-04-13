@@ -4,13 +4,14 @@ import userEvent from '@testing-library/user-event';
 import axios from 'axios';
 import UsersPage from './UsersPage';
 import { renderWithClient } from '@/test/renderWithClient';
+import { Role } from '@helpdesk/core';
 
 vi.mock('axios');
 const mockedAxios = vi.mocked(axios);
 
 const mockUsers = [
-  { id: '1', name: 'Alice Admin', email: 'alice@example.com', role: 'admin' as const, createdAt: '2024-01-15T00:00:00.000Z' },
-  { id: '2', name: 'Bob Agent', email: 'bob@example.com', role: 'agent' as const, createdAt: '2024-03-20T00:00:00.000Z' },
+  { id: '1', name: 'Alice Admin', email: 'alice@example.com', role: Role.admin, createdAt: '2024-01-15T00:00:00.000Z' },
+  { id: '2', name: 'Bob Agent', email: 'bob@example.com', role: Role.agent, createdAt: '2024-03-20T00:00:00.000Z' },
 ];
 
 beforeEach(() => {

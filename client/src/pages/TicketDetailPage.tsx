@@ -28,8 +28,11 @@ async function fetchAgents(): Promise<Agent[]> {
   return data;
 }
 
-async function assignTicket(ticketId: string, assignedToId: string | null): Promise<void> {
-  await axios.patch(`/api/tickets/${ticketId}`, { assignedToId }, { withCredentials: true });
+async function updateTicket(
+  ticketId: string,
+  patch: { assignedToId?: string | null; status?: string; category?: string | null },
+): Promise<void> {
+  await axios.patch(`/api/tickets/${ticketId}`, patch, { withCredentials: true });
 }
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
@@ -74,13 +77,22 @@ export default function TicketDetailPage() {
     queryFn: fetchAgents,
   });
 
-  const assignMutation = useMutation({
-    mutationFn: (assignedToId: string | null) => assignTicket(id!, assignedToId),
+  const updateMutation = useMutation({
+    mutationFn: (patch: { assignedToId?: string | null; status?: string; category?: string | null }) =>
+      updateTicket(id!, patch),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ticket", id] }),
   });
 
   function handleAssignChange(value: string) {
-    assignMutation.mutate(value === "" ? null : value);
+    updateMutation.mutate({ assignedToId: value === "" ? null : value });
+  }
+
+  function handleStatusChange(value: string) {
+    updateMutation.mutate({ status: value as TicketStatus });
+  }
+
+  function handleCategoryChange(value: string) {
+    updateMutation.mutate({ category: value === "" ? null : value as TicketCategory });
   }
 
   return (
@@ -119,60 +131,78 @@ export default function TicketDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>{ticket.subject}</CardTitle>
-              <div className="flex flex-wrap gap-2 mt-1">
-                <span className={STATUS_CONFIG[ticket.status].className}>
-                  {STATUS_CONFIG[ticket.status].label}
-                </span>
-                {ticket.category && (
-                  <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                    {CATEGORY_LABELS[ticket.category]}
-                  </span>
-                )}
-              </div>
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm mb-6">
-                <div>
-                  <dt className="text-muted-foreground mb-0.5">From</dt>
-                  <dd>{ticket.senderName} &lt;{ticket.senderEmail}&gt;</dd>
+                {/* Left column: static info */}
+                <div className="space-y-3">
+                  <div>
+                    <dt className="text-muted-foreground mb-0.5">From</dt>
+                    <dd>{ticket.senderName} &lt;{ticket.senderEmail}&gt;</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground mb-0.5">Created</dt>
+                    <dd>{new Date(ticket.createdAt).toLocaleString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground mb-0.5">Updated</dt>
+                    <dd>{new Date(ticket.updatedAt).toLocaleString()}</dd>
+                  </div>
                 </div>
 
-                <div>
-                  <dt className="text-muted-foreground mb-0.5">Assigned to</dt>
-                  <dd>
-                    <Select
-                      value={ticket.assignedTo?.id ?? ""}
-                      onValueChange={handleAssignChange}
-                    >
-                      <SelectTrigger
-                        className="w-48 h-7 text-xs"
-                        aria-label="Assign agent"
-                        disabled={assignMutation.isPending}
-                      >
-                        <span className={ticket.assignedTo ? undefined : "text-muted-foreground"}>
-                          {ticket.assignedTo?.name ?? "Unassigned"}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
-                        {agents.map((agent) => (
-                          <SelectItem key={agent.id} value={agent.id}>
-                            {agent.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </dd>
-                </div>
-
-                <div>
-                  <dt className="text-muted-foreground mb-0.5">Created</dt>
-                  <dd>{new Date(ticket.createdAt).toLocaleString()}</dd>
-                </div>
-
-                <div>
-                  <dt className="text-muted-foreground mb-0.5">Updated</dt>
-                  <dd>{new Date(ticket.updatedAt).toLocaleString()}</dd>
+                {/* Right column: all selects */}
+                <div className="space-y-3">
+                  <div>
+                    <dt className="text-muted-foreground mb-0.5">Assigned to</dt>
+                    <dd>
+                      <Select value={ticket.assignedTo?.id ?? ""} onValueChange={handleAssignChange}>
+                        <SelectTrigger className="w-48 h-7 text-xs" aria-label="Assign agent" disabled={updateMutation.isPending}>
+                          <span className={ticket.assignedTo ? undefined : "text-muted-foreground"}>
+                            {ticket.assignedTo?.name ?? "Unassigned"}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Unassigned</SelectItem>
+                          {agents.map((agent) => (
+                            <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground mb-0.5">Status</dt>
+                    <dd>
+                      <Select value={ticket.status} onValueChange={handleStatusChange}>
+                        <SelectTrigger className="w-48 h-7 text-xs" aria-label="Update status" disabled={updateMutation.isPending}>
+                          <span>{STATUS_CONFIG[ticket.status].label}</span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={TicketStatus.open}>Open</SelectItem>
+                          <SelectItem value={TicketStatus.resolved}>Resolved</SelectItem>
+                          <SelectItem value={TicketStatus.closed}>Closed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground mb-0.5">Category</dt>
+                    <dd>
+                      <Select value={ticket.category ?? ""} onValueChange={handleCategoryChange}>
+                        <SelectTrigger className="w-48 h-7 text-xs" aria-label="Update category" disabled={updateMutation.isPending}>
+                          <span className={ticket.category ? undefined : "text-muted-foreground"}>
+                            {ticket.category ? CATEGORY_LABELS[ticket.category] : "No category"}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No category</SelectItem>
+                          <SelectItem value={TicketCategory.general_question}>General Question</SelectItem>
+                          <SelectItem value={TicketCategory.technical_question}>Technical Question</SelectItem>
+                          <SelectItem value={TicketCategory.refund_request}>Refund Request</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </dd>
+                  </div>
                 </div>
               </dl>
 

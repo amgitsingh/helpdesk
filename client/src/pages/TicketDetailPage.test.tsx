@@ -98,20 +98,62 @@ describe('TicketDetailPage', () => {
     });
   });
 
-  it('renders status badge', async () => {
+  it('renders status select showing current status', async () => {
     mockGetRequests();
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+    expect(screen.getByRole('combobox', { name: /update status/i })).toBeInTheDocument();
     expect(screen.getByText('Open')).toBeInTheDocument();
   });
 
-  it('renders category badge', async () => {
+  it('renders category select showing current category', async () => {
     mockGetRequests();
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+    expect(screen.getByRole('combobox', { name: /update category/i })).toBeInTheDocument();
     expect(screen.getByText('General Question')).toBeInTheDocument();
+  });
+
+  it('calls PATCH with new status when status is changed', async () => {
+    const user = userEvent.setup();
+    mockGetRequests();
+    mockedAxios.patch = vi.fn().mockResolvedValue({ data: { status: 'resolved', category: 'general_question', assignedTo: null } });
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('combobox', { name: /update status/i }));
+    await user.click(screen.getByRole('option', { name: 'Resolved' }));
+
+    await waitFor(() => {
+      expect(mockedAxios.patch).toHaveBeenCalledWith(
+        '/api/tickets/ticket-1',
+        { status: 'resolved' },
+        { withCredentials: true },
+      );
+    });
+  });
+
+  it('calls PATCH with new category when category is changed', async () => {
+    const user = userEvent.setup();
+    mockGetRequests();
+    mockedAxios.patch = vi.fn().mockResolvedValue({ data: { status: 'open', category: 'refund_request', assignedTo: null } });
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('combobox', { name: /update category/i }));
+    await user.click(screen.getByRole('option', { name: 'Refund Request' }));
+
+    await waitFor(() => {
+      expect(mockedAxios.patch).toHaveBeenCalledWith(
+        '/api/tickets/ticket-1',
+        { category: 'refund_request' },
+        { withCredentials: true },
+      );
+    });
   });
 
   it('renders sender info', async () => {

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { ticketSortSchema, ticketFilterSchema, ticketPaginationSchema, ticketAssignSchema } from '@helpdesk/core';
+import { ticketSortSchema, ticketFilterSchema, ticketPaginationSchema, ticketUpdateSchema } from '@helpdesk/core';
 import { requireAuth } from '../middleware/requireAuth';
 import { parseBody } from '../utils/parseBody';
 import prisma from '../lib/prisma';
@@ -47,13 +47,19 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 router.patch('/:id', requireAuth, async (req, res) => {
-  const data = parseBody(ticketAssignSchema, req.body, res);
+  const data = parseBody(ticketUpdateSchema, req.body, res);
   if (!data) return;
 
   const ticket = await prisma.ticket.update({
     where: { id: String(req.params.id) },
-    data: { assignedToId: data.assignedToId },
+    data: {
+      ...(data.assignedToId !== undefined ? { assignedToId: data.assignedToId } : {}),
+      ...(data.status       !== undefined ? { status: data.status }             : {}),
+      ...(data.category     !== undefined ? { category: data.category }         : {}),
+    },
     select: {
+      status: true,
+      category: true,
       assignedTo: { select: { id: true, name: true } },
     },
   });

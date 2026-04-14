@@ -68,8 +68,10 @@ export type TicketPage = {
   pageSize: number;
 };
 
-export const ticketAssignSchema = z.object({
-  assignedToId: z.string().nullable(),
+export const ticketUpdateSchema = z.object({
+  assignedToId: z.string().nullable().optional(),
+  status:       z.nativeEnum(TicketStatus).optional(),
+  category:     z.nativeEnum(TicketCategory).nullable().optional(),
 });
 
 export const inboundEmailSchema = z.object({

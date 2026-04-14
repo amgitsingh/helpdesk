@@ -45,6 +45,22 @@ export type Ticket = {
   createdAt: string;
 };
 
+export type TicketMessage = {
+  id: string;
+  body: string;
+  sender: 'customer' | 'agent' | 'ai';
+  sentAt: string;
+  user: { id: string; name: string } | null;
+};
+
+export type TicketDetail = Ticket & {
+  body: string;
+  aiSummary: string | null;
+  aiSuggestedReply: string | null;
+  updatedAt: string;
+  messages: TicketMessage[];
+};
+
 export type TicketPage = {
   data: Ticket[];
   total: number;

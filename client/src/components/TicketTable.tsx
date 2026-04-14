@@ -7,6 +7,7 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { Link } from "react-router-dom";
 import { type Ticket, TicketStatus, TicketCategory } from "@helpdesk/core";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -49,8 +50,13 @@ const columns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "subject",
     header: "Subject",
-    cell: ({ getValue }) => (
-      <span className="font-medium">{getValue<string>()}</span>
+    cell: ({ row }) => (
+      <Link
+        to={`/tickets/${row.original.id}`}
+        className="font-medium hover:underline"
+      >
+        {row.original.subject}
+      </Link>
     ),
   },
   {

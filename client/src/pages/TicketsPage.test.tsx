@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import axios from 'axios';
 import TicketsPage from './TicketsPage';
 import { renderWithClient } from '@/test/renderWithClient';
@@ -140,5 +141,135 @@ describe('TicketsPage', () => {
       withCredentials: true,
       params: { sortBy: 'createdAt', sortDir: 'desc' },
     });
+  });
+
+  it('renders the Status and Category filter dropdowns', async () => {
+    mockedAxios.get = vi.fn().mockResolvedValue({ data: [] });
+    renderWithClient(<TicketsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No tickets found.')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('All Statuses')).toBeInTheDocument();
+    expect(screen.getByText('All Categories')).toBeInTheDocument();
+  });
+
+  it('renders the search input', async () => {
+    mockedAxios.get = vi.fn().mockResolvedValue({ data: [] });
+    renderWithClient(<TicketsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No tickets found.')).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('textbox', { name: /search tickets/i })).toBeInTheDocument();
+  });
+
+  it('does not show the Clear button when no filter is active', async () => {
+    mockedAxios.get = vi.fn().mockResolvedValue({ data: [] });
+    renderWithClient(<TicketsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No tickets found.')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: /clear/i })).not.toBeInTheDocument();
+  });
+
+  it('sends the status filter param when a status is selected', async () => {
+    const user = userEvent.setup();
+    mockedAxios.get = vi.fn().mockResolvedValue({ data: [] });
+    renderWithClient(<TicketsPage />);
+
+    await waitFor(() => expect(screen.getByText('No tickets found.')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('combobox', { name: /filter by status/i }));
+    await user.click(screen.getByRole('option', { name: 'Open' }));
+
+    await waitFor(() => {
+      expect(mockedAxios.get).toHaveBeenLastCalledWith('/api/tickets', {
+        withCredentials: true,
+        params: { sortBy: 'createdAt', sortDir: 'desc', status: TicketStatus.open },
+      });
+    });
+  });
+
+  it('sends the category filter param when a category is selected', async () => {
+    const user = userEvent.setup();
+    mockedAxios.get = vi.fn().mockResolvedValue({ data: [] });
+    renderWithClient(<TicketsPage />);
+
+    await waitFor(() => expect(screen.getByText('No tickets found.')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('combobox', { name: /filter by category/i }));
+    await user.click(screen.getByRole('option', { name: 'Refund Request' }));
+
+    await waitFor(() => {
+      expect(mockedAxios.get).toHaveBeenLastCalledWith('/api/tickets', {
+        withCredentials: true,
+        params: { sortBy: 'createdAt', sortDir: 'desc', category: TicketCategory.refund_request },
+      });
+    });
+  });
+
+  it('shows Clear button when search input has text and clears it', async () => {
+    const user = userEvent.setup();
+    mockedAxios.get = vi.fn().mockResolvedValue({ data: [] });
+    renderWithClient(<TicketsPage />);
+
+    await waitFor(() => expect(screen.getByText('No tickets found.')).toBeInTheDocument());
+
+    // hasActiveFilter is based on searchInput (immediate), so Clear appears as soon as text is typed
+    await user.type(screen.getByRole('textbox', { name: /search tickets/i }), 'alice');
+
+    expect(screen.getByRole('button', { name: /clear/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /clear/i }));
+
+    expect(screen.getByRole('textbox', { name: /search tickets/i })).toHaveValue('');
+    expect(screen.queryByRole('button', { name: /clear/i })).not.toBeInTheDocument();
+  });
+
+  it('sends the search param after debounce when text is typed', async () => {
+    const user = userEvent.setup();
+    mockedAxios.get = vi.fn().mockResolvedValue({ data: [] });
+    renderWithClient(<TicketsPage />);
+
+    await waitFor(() => expect(screen.getByText('No tickets found.')).toBeInTheDocument());
+
+    await user.type(screen.getByRole('textbox', { name: /search tickets/i }), 'billing');
+
+    // waitFor polls until the debounced axios call fires (300ms debounce + render)
+    await waitFor(() => {
+      expect(mockedAxios.get).toHaveBeenLastCalledWith('/api/tickets', {
+        withCredentials: true,
+        params: { sortBy: 'createdAt', sortDir: 'desc', search: 'billing' },
+      });
+    }, { timeout: 2000 });
+  });
+
+  it('Clear button resets all filters and refetches with default params', async () => {
+    const user = userEvent.setup();
+    mockedAxios.get = vi.fn().mockResolvedValue({ data: [] });
+    renderWithClient(<TicketsPage />);
+
+    await waitFor(() => expect(screen.getByText('No tickets found.')).toBeInTheDocument());
+
+    // Type in search box to make Clear appear
+    await user.type(screen.getByRole('textbox', { name: /search tickets/i }), 'test');
+    expect(screen.getByRole('button', { name: /clear/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /clear/i }));
+
+    expect(screen.queryByRole('button', { name: /clear/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /search tickets/i })).toHaveValue('');
+
+    await waitFor(() => {
+      expect(mockedAxios.get).toHaveBeenLastCalledWith('/api/tickets', {
+        withCredentials: true,
+        params: { sortBy: 'createdAt', sortDir: 'desc' },
+      });
+    }, { timeout: 2000 });
   });
 });

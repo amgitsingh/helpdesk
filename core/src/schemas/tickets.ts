@@ -19,6 +19,14 @@ export const ticketSortSchema = z.object({
 
 export type TicketSort = z.infer<typeof ticketSortSchema>;
 
+export const ticketFilterSchema = z.object({
+  status:   z.nativeEnum(TicketStatus).optional(),
+  category: z.nativeEnum(TicketCategory).optional(),
+  search:   z.string().optional(),
+});
+
+export type TicketFilter = z.infer<typeof ticketFilterSchema>;
+
 export type Ticket = {
   id: string;
   subject: string;

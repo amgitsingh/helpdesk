@@ -1,4 +1,16 @@
 import { z } from 'zod';
+import { TicketStatus, TicketCategory } from '../constants/tickets';
+
+export type Ticket = {
+  id: string;
+  subject: string;
+  senderEmail: string;
+  senderName: string;
+  status: TicketStatus;
+  category: TicketCategory | null;
+  assignedTo: { id: string; name: string } | null;
+  createdAt: string;
+};
 
 export const inboundEmailSchema = z.object({
   senderEmail: z.string().email(),

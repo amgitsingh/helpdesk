@@ -1,10 +1,13 @@
 import { Router } from 'express';
+import { ticketSortSchema } from '@helpdesk/core';
 import { requireAuth } from '../middleware/requireAuth';
 import prisma from '../lib/prisma';
 
 const router = Router();
 
-router.get('/', requireAuth, async (_req, res) => {
+router.get('/', requireAuth, async (req, res) => {
+  const { sortBy, sortDir } = ticketSortSchema.parse(req.query);
+
   const tickets = await prisma.ticket.findMany({
     select: {
       id: true,
@@ -18,7 +21,7 @@ router.get('/', requireAuth, async (_req, res) => {
         select: { id: true, name: true },
       },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { [sortBy]: sortDir },
   });
   res.json(tickets);
 });

@@ -128,7 +128,7 @@ describe('TicketsPage', () => {
     });
   });
 
-  it('calls the correct endpoint with credentials', async () => {
+  it('calls the correct endpoint with credentials and default sort params', async () => {
     mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTickets });
     renderWithClient(<TicketsPage />);
 
@@ -136,6 +136,9 @@ describe('TicketsPage', () => {
       expect(screen.getByText('My order is missing')).toBeInTheDocument();
     });
 
-    expect(mockedAxios.get).toHaveBeenCalledWith('/api/tickets', { withCredentials: true });
+    expect(mockedAxios.get).toHaveBeenCalledWith('/api/tickets', {
+      withCredentials: true,
+      params: { sortBy: 'createdAt', sortDir: 'desc' },
+    });
   });
 });

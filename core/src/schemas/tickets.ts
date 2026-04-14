@@ -1,6 +1,24 @@
 import { z } from 'zod';
 import { TicketStatus, TicketCategory } from '../constants/tickets';
 
+export const TICKET_SORT_FIELDS = [
+  'subject',
+  'senderName',
+  'senderEmail',
+  'status',
+  'category',
+  'createdAt',
+] as const;
+
+export type TicketSortField = (typeof TICKET_SORT_FIELDS)[number];
+
+export const ticketSortSchema = z.object({
+  sortBy: z.enum(TICKET_SORT_FIELDS).default('createdAt'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
+});
+
+export type TicketSort = z.infer<typeof ticketSortSchema>;
+
 export type Ticket = {
   id: string;
   subject: string;

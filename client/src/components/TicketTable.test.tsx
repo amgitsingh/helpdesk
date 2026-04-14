@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { type SortingState } from '@tanstack/react-table';
 import { TicketTable } from './TicketTable';
 import { renderWithClient } from '@/test/renderWithClient';
 import { TicketStatus, TicketCategory, type Ticket } from '@helpdesk/core';
@@ -31,9 +33,17 @@ function renderTable(
   tickets: Ticket[] = mockTickets,
   isPending = false,
   isError = false,
+  sorting: SortingState = [],
+  onSortingChange = vi.fn(),
 ) {
   return renderWithClient(
-    <TicketTable tickets={tickets} isPending={isPending} isError={isError} />,
+    <TicketTable
+      tickets={tickets}
+      isPending={isPending}
+      isError={isError}
+      sorting={sorting}
+      onSortingChange={onSortingChange}
+    />,
   );
 }
 
@@ -70,13 +80,35 @@ describe('TicketTable — empty state', () => {
 });
 
 describe('TicketTable — columns', () => {
-  it('renders the expected column headers', () => {
+  it('renders a sort button for each column header', () => {
     renderTable();
-    expect(screen.getByRole('columnheader', { name: 'Subject' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Sender' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Status' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Category' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Created' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /subject/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /sender/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /status/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /category/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /created/i })).toBeInTheDocument();
+  });
+});
+
+describe('TicketTable — sorting', () => {
+  it('calls onSortingChange when a column header button is clicked', async () => {
+    const user = userEvent.setup();
+    const onSortingChange = vi.fn();
+    renderTable(mockTickets, false, false, [], onSortingChange);
+
+    await user.click(screen.getByRole('button', { name: /subject/i }));
+
+    expect(onSortingChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onSortingChange when the Created header is clicked', async () => {
+    const user = userEvent.setup();
+    const onSortingChange = vi.fn();
+    renderTable(mockTickets, false, false, [], onSortingChange);
+
+    await user.click(screen.getByRole('button', { name: /created/i }));
+
+    expect(onSortingChange).toHaveBeenCalledTimes(1);
   });
 });
 

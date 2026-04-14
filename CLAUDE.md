@@ -109,7 +109,11 @@ Nav links visible only to admins: check `session?.user.role === Role.admin` inli
 
 ## Backend Validation
 - Use **Zod** for all request body validation in API routes — prefer schemas from `@helpdesk/core` when the same schema is needed on the client
-- Parse with `schema.safeParse(req.body)` and return `400` with `result.error.issues[0].message` on failure
+- Use the `parseBody` utility (`server/src/utils/parseBody.ts`) to validate request bodies — it calls `schema.safeParse`, sends a `400` with `result.error.issues[0].message` on failure, and returns `null` so the route can `return` early:
+  ```ts
+  const data = parseBody(mySchema, req.body, res);
+  if (!data) return;
+  ```
 
 ## Security
 - `helmet` is applied as the first middleware in `server/src/app.ts` (sets X-Frame-Options, HSTS, CSP, etc.)

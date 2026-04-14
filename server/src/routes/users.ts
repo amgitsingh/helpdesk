@@ -1,20 +1,11 @@
-import { Router, type Response } from 'express';
+import { Router } from 'express';
 import { randomBytes, scrypt } from 'crypto';
-import { type ZodType } from 'zod';
 import { createUserSchema, editUserSchema } from '@helpdesk/core';
 import { requireAuth } from '../middleware/requireAuth';
 import { requireAdmin } from '../middleware/requireAdmin';
+import { parseBody } from '../utils/parseBody';
 import prisma from '../lib/prisma';
 import { Role } from '../generated/prisma/client';
-
-function parseBody<T>(schema: ZodType<T>, body: unknown, res: Response): T | null {
-  const result = schema.safeParse(body);
-  if (!result.success) {
-    res.status(400).json({ error: result.error.issues[0].message });
-    return null;
-  }
-  return result.data;
-}
 
 const router = Router();
 

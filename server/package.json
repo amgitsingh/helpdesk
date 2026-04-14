@@ -6,6 +6,7 @@
     "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/index.js",
+    "db:reset": "prisma migrate reset --force && prisma db seed",
     "seed": "ts-node src/seed.ts",
     "seed:agent": "ts-node src/seed-agent.ts"
   },

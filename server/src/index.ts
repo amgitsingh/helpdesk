@@ -1,7 +1,7 @@
 import 'dotenv/config'; // must be first — loads env before any other module reads process.env
 import app from './app';
 
-const requiredEnv = ['BETTER_AUTH_SECRET', 'BETTER_AUTH_URL', 'DATABASE_URL', 'CLIENT_URL'];
+const requiredEnv = ['BETTER_AUTH_SECRET', 'BETTER_AUTH_URL', 'DATABASE_URL', 'CLIENT_URL', 'WEBHOOK_SECRET'];
 for (const key of requiredEnv) {
   if (!process.env[key]) {
     console.error(`Missing required environment variable: ${key}`);

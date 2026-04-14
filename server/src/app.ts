@@ -5,6 +5,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth';
 import { requireAuth } from './middleware/requireAuth';
 import usersRouter from './routes/users';
+import webhooksRouter from './routes/webhooks';
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.get('/api/me', requireAuth, (req, res) => {
 });
 
 app.use('/api/users', usersRouter);
+app.use('/api/webhooks', webhooksRouter);
 
 // Global error handler — catches async errors forwarded by Express 5
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

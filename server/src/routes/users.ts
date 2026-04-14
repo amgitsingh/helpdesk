@@ -23,6 +23,15 @@ async function hashPassword(password: string): Promise<string> {
   return `${salt}:${key.toString('hex')}`;
 }
 
+router.get('/agents', requireAuth, async (_req, res) => {
+  const agents = await prisma.user.findMany({
+    where: { deletedAt: null },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+  res.json(agents);
+});
+
 router.get('/', requireAuth, requireAdmin, async (_req, res) => {
   const users = await prisma.user.findMany({
     where: { deletedAt: null },

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import axios from 'axios';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -8,6 +9,11 @@ import { TicketStatus, TicketCategory, type TicketDetail } from '@helpdesk/core'
 
 vi.mock('axios');
 const mockedAxios = vi.mocked(axios);
+
+const mockAgents = [
+  { id: 'u1', name: 'Agent One' },
+  { id: 'u2', name: 'Agent Two' },
+];
 
 const mockTicket: TicketDetail = {
   id: 'ticket-1',
@@ -40,19 +46,25 @@ const mockTicket: TicketDetail = {
   ],
 };
 
+// Mock both GET /api/tickets/:id and GET /api/users/agents
+function mockGetRequests(ticket: TicketDetail = mockTicket) {
+  mockedAxios.get = vi.fn().mockImplementation((url: string) => {
+    if (url.includes('/api/users/agents')) return Promise.resolve({ data: mockAgents });
+    return Promise.resolve({ data: ticket });
+  });
+}
+
 function renderDetail(id = 'ticket-1') {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return {
-    ...require('@testing-library/react').render(
-      <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={[`/tickets/${id}`]}>
-          <Routes>
-            <Route path="/tickets/:id" element={<TicketDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    ),
-  };
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  return require('@testing-library/react').render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[`/tickets/${id}`]}>
+        <Routes>
+          <Route path="/tickets/:id" element={<TicketDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
 }
 
 beforeEach(() => {
@@ -78,7 +90,7 @@ describe('TicketDetailPage', () => {
   });
 
   it('renders subject as page heading', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTicket });
+    mockGetRequests();
     renderDetail();
 
     await waitFor(() => {
@@ -87,7 +99,7 @@ describe('TicketDetailPage', () => {
   });
 
   it('renders status badge', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTicket });
+    mockGetRequests();
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
@@ -95,7 +107,7 @@ describe('TicketDetailPage', () => {
   });
 
   it('renders category badge', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTicket });
+    mockGetRequests();
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
@@ -103,7 +115,7 @@ describe('TicketDetailPage', () => {
   });
 
   it('renders sender info', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTicket });
+    mockGetRequests();
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
@@ -111,24 +123,45 @@ describe('TicketDetailPage', () => {
     expect(screen.getByText(/alice@example.com/)).toBeInTheDocument();
   });
 
-  it('renders assigned agent', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTicket });
+  it('renders assign dropdown showing current agent', async () => {
+    mockGetRequests();
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+    expect(screen.getByRole('combobox', { name: /assign agent/i })).toBeInTheDocument();
     expect(screen.getAllByText('Agent One').length).toBeGreaterThan(0);
   });
 
-  it('shows Unassigned when no agent assigned', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: { ...mockTicket, assignedTo: null } });
+  it('shows Unassigned placeholder when no agent assigned', async () => {
+    mockGetRequests({ ...mockTicket, assignedTo: null });
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
     expect(screen.getByText('Unassigned')).toBeInTheDocument();
   });
 
+  it('calls PATCH with selected agent id when an agent is chosen', async () => {
+    const user = userEvent.setup();
+    mockGetRequests({ ...mockTicket, assignedTo: null });
+    mockedAxios.patch = vi.fn().mockResolvedValue({ data: { assignedTo: { id: 'u2', name: 'Agent Two' } } });
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('combobox', { name: /assign agent/i }));
+    await user.click(screen.getByRole('option', { name: 'Agent Two' }));
+
+    await waitFor(() => {
+      expect(mockedAxios.patch).toHaveBeenCalledWith(
+        '/api/tickets/ticket-1',
+        { assignedToId: 'u2' },
+        { withCredentials: true },
+      );
+    });
+  });
+
   it('renders original message body', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTicket });
+    mockGetRequests();
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
@@ -136,7 +169,7 @@ describe('TicketDetailPage', () => {
   });
 
   it('renders AI summary and suggested reply', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTicket });
+    mockGetRequests();
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
@@ -145,9 +178,7 @@ describe('TicketDetailPage', () => {
   });
 
   it('does not render AI Insights section when both fields are null', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({
-      data: { ...mockTicket, aiSummary: null, aiSuggestedReply: null },
-    });
+    mockGetRequests({ ...mockTicket, aiSummary: null, aiSuggestedReply: null });
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
@@ -155,7 +186,7 @@ describe('TicketDetailPage', () => {
   });
 
   it('renders messages thread', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTicket });
+    mockGetRequests();
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
@@ -165,7 +196,7 @@ describe('TicketDetailPage', () => {
   });
 
   it('does not render Messages section when there are no messages', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: { ...mockTicket, messages: [] } });
+    mockGetRequests({ ...mockTicket, messages: [] });
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
@@ -173,18 +204,19 @@ describe('TicketDetailPage', () => {
   });
 
   it('renders a back link to /tickets', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTicket });
+    mockGetRequests();
     renderDetail();
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
     expect(screen.getByRole('link', { name: /back to tickets/i })).toHaveAttribute('href', '/tickets');
   });
 
-  it('calls the correct endpoint', async () => {
-    mockedAxios.get = vi.fn().mockResolvedValue({ data: mockTicket });
+  it('calls the correct endpoints', async () => {
+    mockGetRequests();
     renderDetail('ticket-1');
 
     await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
     expect(mockedAxios.get).toHaveBeenCalledWith('/api/tickets/ticket-1', { withCredentials: true });
+    expect(mockedAxios.get).toHaveBeenCalledWith('/api/users/agents', { withCredentials: true });
   });
 });

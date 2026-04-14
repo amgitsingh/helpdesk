@@ -1,16 +1,35 @@
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { type TicketDetail, TicketStatus, TicketCategory } from "@helpdesk/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
+
+type Agent = { id: string; name: string };
 
 async function fetchTicket(id: string): Promise<TicketDetail> {
   const { data } = await axios.get<TicketDetail>(`/api/tickets/${id}`, {
     withCredentials: true,
   });
   return data;
+}
+
+async function fetchAgents(): Promise<Agent[]> {
+  const { data } = await axios.get<Agent[]>("/api/users/agents", {
+    withCredentials: true,
+  });
+  return data;
+}
+
+async function assignTicket(ticketId: string, assignedToId: string | null): Promise<void> {
+  await axios.patch(`/api/tickets/${ticketId}`, { assignedToId }, { withCredentials: true });
 }
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
@@ -42,12 +61,27 @@ const SENDER_LABEL: Record<string, string> = {
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
 
   const { data: ticket, isPending, isError } = useQuery({
     queryKey: ["ticket", id],
     queryFn: () => fetchTicket(id!),
     enabled: !!id,
   });
+
+  const { data: agents = [] } = useQuery({
+    queryKey: ["agents"],
+    queryFn: fetchAgents,
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: (assignedToId: string | null) => assignTicket(id!, assignedToId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ticket", id] }),
+  });
+
+  function handleAssignChange(value: string) {
+    assignMutation.mutate(value === "" ? null : value);
+  }
 
   return (
     <div className="max-w-4xl p-6 mx-auto space-y-4">
@@ -97,18 +131,49 @@ export default function TicketDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm mb-6">
-                <dt className="text-muted-foreground">From</dt>
-                <dd>{ticket.senderName} &lt;{ticket.senderEmail}&gt;</dd>
+              <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm mb-6">
+                <div>
+                  <dt className="text-muted-foreground mb-0.5">From</dt>
+                  <dd>{ticket.senderName} &lt;{ticket.senderEmail}&gt;</dd>
+                </div>
 
-                <dt className="text-muted-foreground">Assigned to</dt>
-                <dd>{ticket.assignedTo?.name ?? <span className="text-muted-foreground">Unassigned</span>}</dd>
+                <div>
+                  <dt className="text-muted-foreground mb-0.5">Assigned to</dt>
+                  <dd>
+                    <Select
+                      value={ticket.assignedTo?.id ?? ""}
+                      onValueChange={handleAssignChange}
+                    >
+                      <SelectTrigger
+                        className="w-48 h-7 text-xs"
+                        aria-label="Assign agent"
+                        disabled={assignMutation.isPending}
+                      >
+                        <span className={ticket.assignedTo ? undefined : "text-muted-foreground"}>
+                          {ticket.assignedTo?.name ?? "Unassigned"}
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Unassigned</SelectItem>
+                        {agents.map((agent) => (
+                          <SelectItem key={agent.id} value={agent.id}>
+                            {agent.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </dd>
+                </div>
 
-                <dt className="text-muted-foreground">Created</dt>
-                <dd>{new Date(ticket.createdAt).toLocaleString()}</dd>
+                <div>
+                  <dt className="text-muted-foreground mb-0.5">Created</dt>
+                  <dd>{new Date(ticket.createdAt).toLocaleString()}</dd>
+                </div>
 
-                <dt className="text-muted-foreground">Updated</dt>
-                <dd>{new Date(ticket.updatedAt).toLocaleString()}</dd>
+                <div>
+                  <dt className="text-muted-foreground mb-0.5">Updated</dt>
+                  <dd>{new Date(ticket.updatedAt).toLocaleString()}</dd>
+                </div>
               </dl>
 
               <div>

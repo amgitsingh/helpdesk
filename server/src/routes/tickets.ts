@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { ticketSortSchema, ticketFilterSchema, ticketPaginationSchema } from '@helpdesk/core';
+import { ticketSortSchema, ticketFilterSchema, ticketPaginationSchema, ticketAssignSchema } from '@helpdesk/core';
 import { requireAuth } from '../middleware/requireAuth';
+import { parseBody } from '../utils/parseBody';
 import prisma from '../lib/prisma';
 
 const router = Router();
@@ -43,6 +44,20 @@ router.get('/', requireAuth, async (req, res) => {
   ]);
 
   res.json({ data: tickets, total, page, pageSize });
+});
+
+router.patch('/:id', requireAuth, async (req, res) => {
+  const data = parseBody(ticketAssignSchema, req.body, res);
+  if (!data) return;
+
+  const ticket = await prisma.ticket.update({
+    where: { id: String(req.params.id) },
+    data: { assignedToId: data.assignedToId },
+    select: {
+      assignedTo: { select: { id: true, name: true } },
+    },
+  });
+  res.json(ticket);
 });
 
 router.get('/:id', requireAuth, async (req, res) => {

@@ -68,6 +68,10 @@ export type TicketPage = {
   pageSize: number;
 };
 
+export const ticketAssignSchema = z.object({
+  assignedToId: z.string().nullable(),
+});
+
 export const inboundEmailSchema = z.object({
   senderEmail: z.string().email(),
   senderName: z.string().trim().min(1),

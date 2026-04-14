@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type SortingState, type OnChangeFn } from "@tanstack/react-table";
 import axios from "axios";
-import { type Ticket, TicketStatus, TicketCategory } from "@helpdesk/core";
+import { type TicketPage, TicketStatus, TicketCategory } from "@helpdesk/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,18 +15,23 @@ import {
 } from "@/components/ui/select";
 import { TicketTable } from "@/components/TicketTable";
 
+const PAGE_SIZE = 10;
+
 async function fetchTickets(
   sortBy: string,
   sortDir: string,
+  page: number,
   status?: TicketStatus,
   category?: TicketCategory,
   search?: string,
-): Promise<Ticket[]> {
-  const { data } = await axios.get<Ticket[]>("/api/tickets", {
+): Promise<TicketPage> {
+  const { data } = await axios.get<TicketPage>("/api/tickets", {
     withCredentials: true,
     params: {
       sortBy,
       sortDir,
+      page,
+      pageSize: PAGE_SIZE,
       ...(status   !== undefined ? { status }   : {}),
       ...(category !== undefined ? { category } : {}),
       ...(search   ? { search }                 : {}),
@@ -41,19 +46,28 @@ export default function TicketsPage() {
   const [categoryFilter, setCategoryFilter] = useState<TicketCategory | undefined>(undefined);
   const [searchInput,    setSearchInput]    = useState("");
   const [search,         setSearch]         = useState("");
+  const [page,           setPage]           = useState(1);
 
+  const sortBy  = sorting[0]?.id ?? "createdAt";
+  const sortDir = sorting[0]?.desc ? "desc" : "asc";
+
+  // Debounce raw search input → committed search value
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const sortBy  = sorting[0]?.id ?? "createdAt";
-  const sortDir = sorting[0]?.desc ? "desc" : "asc";
+  // Reset to page 1 whenever filters or sort change
+  useEffect(() => { setPage(1); }, [sortBy, sortDir, statusFilter, categoryFilter, search]);
 
-  const { data: tickets = [], isPending, isError } = useQuery({
-    queryKey: ["tickets", sortBy, sortDir, statusFilter, categoryFilter, search],
-    queryFn: () => fetchTickets(sortBy, sortDir, statusFilter, categoryFilter, search || undefined),
+  const { data, isPending, isError } = useQuery({
+    queryKey: ["tickets", sortBy, sortDir, page, statusFilter, categoryFilter, search],
+    queryFn: () => fetchTickets(sortBy, sortDir, page, statusFilter, categoryFilter, search || undefined),
   });
+
+  const tickets    = data?.data  ?? [];
+  const total      = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
     setSorting((prev) => (typeof updater === "function" ? updater(prev) : updater));
@@ -131,6 +145,56 @@ export default function TicketsPage() {
             sorting={sorting}
             onSortingChange={handleSortingChange}
           />
+          {!isPending && !isError && (
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-sm text-muted-foreground">
+                {total === 0
+                  ? "No tickets"
+                  : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total}`}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(1)}
+                  disabled={page <= 1}
+                  aria-label="First page"
+                >
+                  First
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => p - 1)}
+                  disabled={page <= 1}
+                  aria-label="Previous page"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= totalPages}
+                  aria-label="Next page"
+                >
+                  Next
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(totalPages)}
+                  disabled={page >= totalPages}
+                  aria-label="Last page"
+                >
+                  Last
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

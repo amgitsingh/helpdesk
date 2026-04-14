@@ -27,6 +27,13 @@ export const ticketFilterSchema = z.object({
 
 export type TicketFilter = z.infer<typeof ticketFilterSchema>;
 
+export const ticketPaginationSchema = z.object({
+  page:     z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export type TicketPagination = z.infer<typeof ticketPaginationSchema>;
+
 export type Ticket = {
   id: string;
   subject: string;
@@ -36,6 +43,13 @@ export type Ticket = {
   category: TicketCategory | null;
   assignedTo: { id: string; name: string } | null;
   createdAt: string;
+};
+
+export type TicketPage = {
+  data: Ticket[];
+  total: number;
+  page: number;
+  pageSize: number;
 };
 
 export const inboundEmailSchema = z.object({

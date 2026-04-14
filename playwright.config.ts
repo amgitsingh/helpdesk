@@ -36,6 +36,7 @@ export default defineConfig({
         BETTER_AUTH_SECRET: process.env.TEST_BETTER_AUTH_SECRET!,
         BETTER_AUTH_URL: process.env.TEST_BETTER_AUTH_URL!,
         CLIENT_URL: process.env.TEST_CLIENT_URL!,
+        WEBHOOK_SECRET: process.env.TEST_WEBHOOK_SECRET!,
       },
     },
     {

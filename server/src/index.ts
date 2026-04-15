@@ -2,6 +2,7 @@ import 'dotenv/config'; // must be first — loads env before any other module r
 import app from './app';
 import boss from './lib/boss';
 import { startClassifyTicketWorker } from './workers/classifyTicketWorker';
+import { startAutoResolveTicketWorker } from './workers/autoResolveTicketWorker';
 
 const requiredEnv = ['BETTER_AUTH_SECRET', 'BETTER_AUTH_URL', 'DATABASE_URL', 'CLIENT_URL', 'WEBHOOK_SECRET'];
 for (const key of requiredEnv) {
@@ -20,6 +21,7 @@ const PORT = process.env.PORT ?? 5000;
 async function start() {
   await boss.start();
   await startClassifyTicketWorker();
+  await startAutoResolveTicketWorker();
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

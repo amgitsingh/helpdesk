@@ -20,6 +20,14 @@ import {
 } from "@/components/ui/table";
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
+  [TicketStatus.new]: {
+    label: "New",
+    className: "inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600",
+  },
+  [TicketStatus.processing]: {
+    label: "Processing",
+    className: "inline-flex items-center rounded-md bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700",
+  },
   [TicketStatus.open]: {
     label: "Open",
     className: "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary",

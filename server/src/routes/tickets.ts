@@ -5,7 +5,7 @@ import { ticketSortSchema, ticketFilterSchema, ticketPaginationSchema, ticketUpd
 import { requireAuth } from '../middleware/requireAuth';
 import { parseBody } from '../utils/parseBody';
 import prisma from '../lib/prisma';
-import { MessageSender } from '../generated/prisma/client';
+import { MessageSender, TicketStatus } from '../generated/prisma/client';
 
 const router = Router();
 
@@ -22,6 +22,8 @@ router.get('/', requireAuth, async (req, res) => {
       { senderName:  { contains: search, mode: 'insensitive' as const } },
       { senderEmail: { contains: search, mode: 'insensitive' as const } },
     ]} : {}),
+    // Hide tickets still being processed by the pipeline
+    NOT: { status: { in: [TicketStatus.new, TicketStatus.processing] } },
   };
 
   const [tickets, total] = await prisma.$transaction([

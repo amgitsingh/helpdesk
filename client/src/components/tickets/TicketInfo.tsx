@@ -19,9 +19,11 @@ interface TicketInfoProps {
 }
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string }> = {
-  [TicketStatus.open]:     { label: "Open" },
-  [TicketStatus.resolved]: { label: "Resolved" },
-  [TicketStatus.closed]:   { label: "Closed" },
+  [TicketStatus.new]:        { label: "New" },
+  [TicketStatus.processing]: { label: "Processing" },
+  [TicketStatus.open]:       { label: "Open" },
+  [TicketStatus.resolved]:   { label: "Resolved" },
+  [TicketStatus.closed]:     { label: "Closed" },
 };
 
 const CATEGORY_LABELS: Record<TicketCategory, string> = {

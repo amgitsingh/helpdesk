@@ -6,6 +6,8 @@ import prisma from './prisma';
 import { MessageSender, TicketStatus } from '../generated/prisma/client';
 import type { TicketModel } from '../generated/prisma/models/Ticket';
 
+export const AI_AGENT_EMAIL = 'ai@helpdesk.internal';
+
 const knowledgeBase = readFileSync(
   join(__dirname, '../../KNOWLEDGE_BASE.md'),
   'utf-8',
@@ -16,9 +18,15 @@ export async function autoResolveTicket(
 ): Promise<void> {
   const firstName = ticket.senderName.split(' ')[0];
 
+  const aiAgent = await prisma.user.findUnique({
+    where: { email: AI_AGENT_EMAIL },
+    select: { id: true },
+  });
+
+  // Move to processing and assign to the AI agent
   await prisma.ticket.update({
     where: { id: ticket.id },
-    data: { status: TicketStatus.processing },
+    data: { status: TicketStatus.processing, assignedToId: aiAgent?.id ?? null },
   });
 
   let result: { canResolve: boolean; reply?: string };
@@ -49,10 +57,10 @@ Rules:
     });
     result = JSON.parse(text.trim());
   } catch {
-    // generateText failed or returned malformed JSON — hand off to an agent
+    // generateText failed or returned malformed JSON — unassign and hand off to an agent
     await prisma.ticket.update({
       where: { id: ticket.id },
-      data: { status: TicketStatus.open },
+      data: { status: TicketStatus.open, assignedToId: null },
     });
     return;
   }
@@ -65,14 +73,16 @@ Rules:
         ticketId: ticket.id,
       },
     });
+    // Keep assigned to AI agent — it resolved the ticket
     await prisma.ticket.update({
       where: { id: ticket.id },
       data: { status: TicketStatus.resolved },
     });
   } else {
+    // AI could not resolve — unassign so a human agent can pick it up
     await prisma.ticket.update({
       where: { id: ticket.id },
-      data: { status: TicketStatus.open },
+      data: { status: TicketStatus.open, assignedToId: null },
     });
   }
 }

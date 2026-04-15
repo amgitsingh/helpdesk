@@ -7,6 +7,7 @@ import { requireAuth } from './middleware/requireAuth';
 import usersRouter from './routes/users';
 import webhooksRouter from './routes/webhooks';
 import ticketsRouter from './routes/tickets';
+import statsRouter from './routes/stats';
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.get('/api/me', requireAuth, (req, res) => {
 app.use('/api/users', usersRouter);
 app.use('/api/webhooks', webhooksRouter);
 app.use('/api/tickets', ticketsRouter);
+app.use('/api/stats', statsRouter);
 
 // Global error handler — catches async errors forwarded by Express 5
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

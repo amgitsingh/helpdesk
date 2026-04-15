@@ -33,6 +33,18 @@ async function seed() {
 
   if (existing) {
     console.log(`User ${seedEmail} already exists — skipping.`);
+
+    // Still ensure the AI agent exists
+    const aiEmail = 'ai@helpdesk.internal';
+    const aiExists = await prisma.user.findUnique({ where: { email: aiEmail } });
+    if (!aiExists) {
+      await prisma.user.create({
+        data: { name: 'AI', email: aiEmail, emailVerified: true, role: Role.agent },
+      });
+      console.log('AI agent created.');
+    } else {
+      console.log('AI agent already exists — skipping.');
+    }
     await prisma.$disconnect();
     return;
   }
@@ -58,6 +70,19 @@ async function seed() {
   });
 
   console.log(`Created user: ${seedEmail} (role: admin)`);
+
+  // AI agent — system account used by the auto-resolve pipeline
+  const aiEmail = 'ai@helpdesk.internal';
+  const aiExists = await prisma.user.findUnique({ where: { email: aiEmail } });
+  if (aiExists) {
+    console.log('AI agent already exists — skipping.');
+  } else {
+    await prisma.user.create({
+      data: { name: 'AI', email: aiEmail, emailVerified: true, role: Role.agent },
+    });
+    console.log('AI agent created.');
+  }
+
   await prisma.$disconnect();
 }
 

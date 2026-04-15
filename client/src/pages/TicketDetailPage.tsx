@@ -9,6 +9,7 @@ import { TicketInfo } from "@/components/tickets/TicketInfo";
 import { TicketDetailSkeleton } from "@/components/tickets/TicketDetailSkeleton";
 import { MessageThread } from "@/components/tickets/MessageThread";
 import { ReplyForm } from "@/components/tickets/ReplyForm";
+import { TicketSummary } from "@/components/tickets/TicketSummary";
 
 type Agent = { id: string; name: string };
 
@@ -103,6 +104,7 @@ export default function TicketDetailPage() {
             onStatusChange={handleStatusChange}
             onCategoryChange={handleCategoryChange}
           />
+          <TicketSummary ticketId={id!} summary={ticket.aiSummary} />
           <MessageThread messages={ticket.messages} />
           <ReplyForm
             key={replyKey}

@@ -141,6 +141,44 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
   res.status(201).json(message);
 });
 
+router.post('/:id/summarize', requireAuth, async (req, res) => {
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: String(req.params.id) },
+    select: {
+      id: true,
+      subject: true,
+      body: true,
+      senderName: true,
+      messages: {
+        select: { body: true, sender: true, sentAt: true },
+        orderBy: { sentAt: 'asc' },
+      },
+    },
+  });
+
+  if (!ticket) {
+    res.status(404).json({ error: 'Ticket not found' });
+    return;
+  }
+
+  const conversation = ticket.messages
+    .map((m) => `[${m.sender}]: ${m.body}`)
+    .join('\n');
+
+  const { text } = await generateText({
+    model: openai('gpt-4.1-nano'),
+    prompt: `Summarize the following customer support ticket and its conversation history in 2-3 concise sentences. Focus on the customer's issue and the current resolution status. Return only the summary with no preamble.\n\nTicket subject: ${ticket.subject}\nFrom: ${ticket.senderName}\n\nOriginal message:\n${ticket.body}\n\nConversation:\n${conversation}`,
+  });
+
+  const updated = await prisma.ticket.update({
+    where: { id: ticket.id },
+    data: { aiSummary: text },
+    select: { aiSummary: true },
+  });
+
+  res.json(updated);
+});
+
 router.post('/:id/polish-reply', requireAuth, async (req, res) => {
   const data = parseBody(createMessageSchema, req.body, res);
   if (!data) return;

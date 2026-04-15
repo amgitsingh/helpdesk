@@ -140,19 +140,19 @@ describe('TicketInfo', () => {
     await waitFor(() => expect(onAssignChange).toHaveBeenCalledWith('u2'));
   });
 
-  it('renders AI Insights section when aiSummary is present', () => {
+  it('renders AI Insights section when aiSuggestedReply is present', () => {
     renderInfo();
     expect(screen.getByText('AI Insights')).toBeInTheDocument();
-    expect(screen.getByText('Customer reports missing order.')).toBeInTheDocument();
-  });
-
-  it('renders suggested reply when aiSuggestedReply is present', () => {
-    renderInfo();
     expect(screen.getByText('We are looking into it.')).toBeInTheDocument();
   });
 
-  it('does not render AI Insights section when both AI fields are null', () => {
-    renderInfo({ aiSummary: null, aiSuggestedReply: null });
+  it('does not render AI Insights section when aiSuggestedReply is null', () => {
+    renderInfo({ aiSuggestedReply: null });
     expect(screen.queryByText('AI Insights')).not.toBeInTheDocument();
+  });
+
+  it('does not render aiSummary text (summary moved to TicketSummary component)', () => {
+    renderInfo();
+    expect(screen.queryByText('Customer reports missing order.')).not.toBeInTheDocument();
   });
 });

@@ -9,7 +9,8 @@
     "db:reset": "prisma migrate reset --force && prisma db seed",
     "seed": "ts-node src/seed.ts",
     "seed:agent": "ts-node src/seed-agent.ts",
-    "seed:tickets": "ts-node src/seed-tickets.ts"
+    "seed:tickets": "ts-node src/seed-tickets.ts",
+    "seed:conversation": "ts-node src/seed-conversation.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.53",

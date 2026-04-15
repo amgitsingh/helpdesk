@@ -127,30 +127,20 @@ export function TicketInfo({
         </CardContent>
       </Card>
 
-      {(ticket.aiSummary || ticket.aiSuggestedReply) && (
+      {ticket.aiSuggestedReply && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">AI Insights</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {ticket.aiSummary && (
-              <div>
-                <p className="mb-1 text-xs font-medium tracking-wide uppercase text-muted-foreground">
-                  Summary
-                </p>
-                <p className="text-sm">{ticket.aiSummary}</p>
+          <CardContent>
+            <div>
+              <p className="mb-1 text-xs font-medium tracking-wide uppercase text-muted-foreground">
+                Suggested reply
+              </p>
+              <div className="p-4 text-sm whitespace-pre-wrap border rounded-md bg-muted/30">
+                {ticket.aiSuggestedReply}
               </div>
-            )}
-            {ticket.aiSuggestedReply && (
-              <div>
-                <p className="mb-1 text-xs font-medium tracking-wide uppercase text-muted-foreground">
-                  Suggested reply
-                </p>
-                <div className="p-4 text-sm whitespace-pre-wrap border rounded-md bg-muted/30">
-                  {ticket.aiSuggestedReply}
-                </div>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       )}

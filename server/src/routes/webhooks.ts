@@ -4,7 +4,8 @@ import { requireWebhookSecret } from '../middleware/requireWebhookSecret';
 import { parseBody } from '../utils/parseBody';
 import prisma from '../lib/prisma';
 import { MessageSender } from '../generated/prisma/client';
-import { classifyTicket } from '../lib/classifyTicket';
+import boss from '../lib/boss';
+import { CLASSIFY_TICKET_QUEUE } from '../workers/classifyTicketWorker';
 
 const router = Router();
 
@@ -37,8 +38,7 @@ router.post('/inbound-email', requireWebhookSecret, async (req, res) => {
 
   res.status(201).json({ ticketId: ticket.id });
 
-  // Non-blocking: classify in the background after responding
-  classifyTicket(ticket).catch(console.error);
+  await boss.send(CLASSIFY_TICKET_QUEUE, { id: ticket.id, subject: ticket.subject, body: ticket.body });
 });
 
 export default router;

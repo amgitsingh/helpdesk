@@ -1,5 +1,7 @@
 import 'dotenv/config'; // must be first — loads env before any other module reads process.env
 import app from './app';
+import boss from './lib/boss';
+import { startClassifyTicketWorker } from './workers/classifyTicketWorker';
 
 const requiredEnv = ['BETTER_AUTH_SECRET', 'BETTER_AUTH_URL', 'DATABASE_URL', 'CLIENT_URL', 'WEBHOOK_SECRET'];
 for (const key of requiredEnv) {
@@ -15,6 +17,13 @@ if (process.env.BETTER_AUTH_SECRET!.length < 32) {
 
 const PORT = process.env.PORT ?? 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+async function start() {
+  await boss.start();
+  await startClassifyTicketWorker();
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+start();

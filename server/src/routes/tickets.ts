@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
 import { ticketSortSchema, ticketFilterSchema, ticketPaginationSchema, ticketUpdateSchema, createMessageSchema } from '@helpdesk/core';
 import { requireAuth } from '../middleware/requireAuth';
 import { parseBody } from '../utils/parseBody';
@@ -137,6 +139,32 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
   });
 
   res.status(201).json(message);
+});
+
+router.post('/:id/polish-reply', requireAuth, async (req, res) => {
+  const data = parseBody(createMessageSchema, req.body, res);
+  if (!data) return;
+
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: String(req.params.id) },
+    select: { id: true, senderName: true },
+  });
+
+  if (!ticket) {
+    res.status(404).json({ error: 'Ticket not found' });
+    return;
+  }
+
+  const { session } = res.locals;
+  const agentName: string = session.user.name;
+  const customerName: string = ticket.senderName.split(' ')[0];
+
+  const { text } = await generateText({
+    model: openai('gpt-4.1-nano'),
+    prompt: `You are a professional customer support agent named ${agentName}. Improve the following draft reply to a support ticket. Make it clear, professional, empathetic, and concise. Address the customer by their first name "${customerName}" at the start of the reply. End the reply with a sign-off using the name "${agentName}". Return only the improved reply with no preamble or explanation.\n\nDraft:\n${data.body}`,
+  });
+
+  res.json({ polishedBody: text });
 });
 
 export default router;

@@ -106,6 +106,7 @@ export default function TicketDetailPage() {
           <MessageThread messages={ticket.messages} />
           <ReplyForm
             key={replyKey}
+            ticketId={id!}
             onSubmit={(body) => replyMutation.mutate(body)}
             isPending={replyMutation.isPending}
             isError={replyMutation.isError}

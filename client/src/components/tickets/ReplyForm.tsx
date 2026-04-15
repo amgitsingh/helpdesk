@@ -1,16 +1,33 @@
 import { useState } from "react";
+import axios from "axios";
+import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ReplyFormProps {
+  ticketId: string;
   onSubmit: (body: string) => void;
   isPending: boolean;
   isError: boolean;
 }
 
-export function ReplyForm({ onSubmit, isPending, isError }: ReplyFormProps) {
+async function polishReply(ticketId: string, body: string): Promise<string> {
+  const { data } = await axios.post<{ polishedBody: string }>(
+    `/api/tickets/${ticketId}/polish-reply`,
+    { body },
+    { withCredentials: true },
+  );
+  return data.polishedBody;
+}
+
+export function ReplyForm({ ticketId, onSubmit, isPending, isError }: ReplyFormProps) {
   const [body, setBody] = useState("");
+
+  const polishMutation = useMutation({
+    mutationFn: (draft: string) => polishReply(ticketId, draft),
+    onSuccess: (polishedBody) => setBody(polishedBody),
+  });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -18,6 +35,8 @@ export function ReplyForm({ onSubmit, isPending, isError }: ReplyFormProps) {
     if (!trimmed) return;
     onSubmit(trimmed);
   }
+
+  const busy = isPending || polishMutation.isPending;
 
   return (
     <Card>
@@ -30,15 +49,26 @@ export function ReplyForm({ onSubmit, isPending, isError }: ReplyFormProps) {
             placeholder="Write your reply..."
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            disabled={isPending}
+            disabled={busy}
             aria-label="Reply body"
             rows={4}
           />
           {isError && (
             <p className="text-sm text-destructive">Failed to send reply. Please try again.</p>
           )}
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isPending || body.trim() === ""}>
+          {polishMutation.isError && (
+            <p className="text-sm text-destructive">Failed to polish reply. Please try again.</p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy || body.trim() === ""}
+              onClick={() => polishMutation.mutate(body.trim())}
+            >
+              {polishMutation.isPending ? "Polishing…" : "Polish"}
+            </Button>
+            <Button type="submit" disabled={busy || body.trim() === ""}>
               {isPending ? "Sending…" : "Send Reply"}
             </Button>
           </div>

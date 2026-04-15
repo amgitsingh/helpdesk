@@ -75,25 +75,26 @@ export const ticketUpdateSchema = z.object({
 });
 
 export const createMessageSchema = z.object({
-  body: z.string().trim().min(1, 'Reply cannot be empty'),
+  body: z.string().trim().min(1, 'Reply cannot be empty').max(100_000),
 });
 
 export type CreateMessageInput = z.infer<typeof createMessageSchema>;
 
 export const inboundEmailSchema = z.object({
-  senderEmail: z.string().email(),
-  senderName: z.string().trim().min(1),
+  senderEmail: z.string().email().max(254),
+  senderName: z.string().trim().min(1).max(100),
   subject: z
     .string()
     .trim()
     .min(1)
+    .max(255)
     .transform(s => {
       const prefix = /^(re|fwd?|fw):\s*/i;
       while (prefix.test(s)) s = s.replace(prefix, '').trim();
       return s;
     })
     .pipe(z.string().min(1, 'Subject must not be empty after removing prefixes')),
-  body: z.string().min(1),
+  body: z.string().min(1).max(1000),
 });
 
 export type InboundEmail = z.infer<typeof inboundEmailSchema>;

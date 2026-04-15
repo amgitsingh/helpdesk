@@ -4,6 +4,7 @@ import { requireWebhookSecret } from '../middleware/requireWebhookSecret';
 import { parseBody } from '../utils/parseBody';
 import prisma from '../lib/prisma';
 import { MessageSender } from '../generated/prisma/client';
+import { classifyTicket } from '../lib/classifyTicket';
 
 const router = Router();
 
@@ -35,6 +36,9 @@ router.post('/inbound-email', requireWebhookSecret, async (req, res) => {
   });
 
   res.status(201).json({ ticketId: ticket.id });
+
+  // Non-blocking: classify in the background after responding
+  classifyTicket(ticket).catch(console.error);
 });
 
 export default router;

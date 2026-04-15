@@ -245,6 +245,89 @@ describe('TicketDetailPage', () => {
     expect(screen.queryByText('Messages')).not.toBeInTheDocument();
   });
 
+  it('renders the reply form with textarea and button', async () => {
+    mockGetRequests();
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+    expect(screen.getByRole('textbox', { name: /reply body/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send reply/i })).toBeInTheDocument();
+  });
+
+  it('send reply button is disabled when textarea is empty', async () => {
+    mockGetRequests();
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /send reply/i })).toBeDisabled();
+  });
+
+  it('calls POST /api/tickets/:id/messages with the reply body', async () => {
+    const user = userEvent.setup();
+    mockGetRequests();
+    mockedAxios.post = vi.fn().mockResolvedValue({ data: { id: 'msg-3', body: 'Thanks for contacting us!', sender: 'agent', sentAt: new Date().toISOString(), user: { id: 'u1', name: 'Agent One' } } });
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+    await user.type(screen.getByRole('textbox', { name: /reply body/i }), 'Thanks for contacting us!');
+    await user.click(screen.getByRole('button', { name: /send reply/i }));
+
+    await waitFor(() => {
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        '/api/tickets/ticket-1/messages',
+        { body: 'Thanks for contacting us!' },
+        { withCredentials: true },
+      );
+    });
+  });
+
+  it('clears textarea and refetches ticket on successful reply', async () => {
+    const user = userEvent.setup();
+    mockGetRequests();
+    mockedAxios.post = vi.fn().mockResolvedValue({ data: {} });
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+    const textarea = screen.getByRole('textbox', { name: /reply body/i });
+    await user.type(textarea, 'A reply message');
+    await user.click(screen.getByRole('button', { name: /send reply/i }));
+
+    await waitFor(() => {
+      // Re-query after ReplyForm remounts (key change resets component state)
+      const freshTextarea = screen.getByRole('textbox', { name: /reply body/i });
+      expect((freshTextarea as HTMLTextAreaElement).value).toBe('');
+    });
+    expect(mockedAxios.get).toHaveBeenCalledWith('/api/tickets/ticket-1', { withCredentials: true });
+  });
+
+  it('shows error text when reply fails', async () => {
+    const user = userEvent.setup();
+    mockGetRequests();
+    mockedAxios.post = vi.fn().mockRejectedValue(new Error('Server error'));
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+    await user.type(screen.getByRole('textbox', { name: /reply body/i }), 'Hello');
+    await user.click(screen.getByRole('button', { name: /send reply/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to send reply. Please try again.')).toBeInTheDocument();
+    });
+  });
+
+  it('renders message bubbles with visual differentiation', async () => {
+    mockGetRequests();
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByText('My order is missing')).toBeInTheDocument());
+    // Customer message bubble should be left-aligned
+    const customerBubble = screen.getByText('Any update on my order?').closest('[class*="rounded-md"]');
+    expect(customerBubble?.className).toContain('bg-muted');
+    // Agent message bubble should be right-aligned
+    const agentBubble = screen.getByText('We are checking with the warehouse.').closest('[class*="rounded-md"]');
+    expect(agentBubble?.className).toContain('bg-primary');
+  });
+
   it('renders a back link to /tickets', async () => {
     mockGetRequests();
     renderDetail();

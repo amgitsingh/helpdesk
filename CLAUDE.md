@@ -127,16 +127,34 @@ Nav links visible only to admins: check `session?.user.role === Role.admin` inli
 - **Data fetching** — use **TanStack Query** (`useQuery`, `useMutation`) for all server state. Use **axios** for HTTP calls (installed in client). Always pass `withCredentials: true` to axios so cookies are sent. Never use raw `fetch` for API calls.
 
 ## Testing Strategy
-**Default: write unit tests.** Write E2E tests only for flows that require a real browser, real auth session, or multi-step user journeys (e.g. create → verify in UI). Pure rendering, data fetching, and logic belong in unit tests.
 
-**When to write unit tests (always):**
-- Every new component or page gets a co-located unit test on creation
-- Cover: loading state, error state, empty state, data rendering, enum-driven output (badges, labels)
+**Default: unit tests. E2E only for what unit tests physically cannot cover.**
 
-**When to write E2E tests (only when needed):**
-- Full user journeys that span multiple pages or require real auth cookies
-- Flows that cannot be meaningfully tested without a running server + DB (e.g. CRUD verified in the UI end-to-end)
-- Do NOT duplicate what unit tests already cover — E2E tests should test the integration, not re-test rendering details
+### Unit tests — always
+
+Every new component or page gets a co-located unit test on creation. Cover:
+- Loading, error, and empty states
+- Data rendering and enum-driven output (badges, labels, date formatting)
+- User interactions: form submission, button clicks, select changes
+- Conditional rendering (e.g. sections that appear/hide based on props)
+
+### E2E tests — only when a unit test is impossible
+
+Write an E2E test **only** if the scenario requires something a unit test cannot provide:
+
+| Qualifies for E2E | Does NOT qualify (write a unit test) |
+|---|---|
+| Login / logout with a real better-auth session | Form field validation and error messages |
+| Session-based redirects (ProtectedRoute, AdminRoute) | Page heading, column headers, empty-state copy |
+| Role-based nav visibility (admin vs agent) | Status/category badges and label text |
+| Multi-step CRUD flow verified in the real DB (Create → Edit → Delete) | Date/time formatting |
+| Webhook → DB → UI pipeline (real data created server-side) | Loading skeletons |
+| API authentication / authorisation (real middleware) | Dialog open/close behaviour |
+
+**Hard rules:**
+- Never write an E2E test for something already covered by a unit test.
+- Never add an E2E test for rendering details — those always belong in unit tests.
+- When in doubt, write the unit test first. Only add E2E if the unit test cannot meaningfully cover the scenario.
 
 ### Unit Tests (Vitest + React Testing Library)
 - **Framework:** Vitest + React Testing Library (`@testing-library/react`, `@testing-library/jest-dom`)

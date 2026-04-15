@@ -3,6 +3,7 @@ import { inboundEmailSchema } from '@helpdesk/core';
 import { requireWebhookSecret } from '../middleware/requireWebhookSecret';
 import { parseBody } from '../utils/parseBody';
 import prisma from '../lib/prisma';
+import { MessageSender } from '../generated/prisma/client';
 
 const router = Router();
 
@@ -18,6 +19,13 @@ router.post('/inbound-email', requireWebhookSecret, async (req, res) => {
   });
 
   if (existing) {
+    await prisma.message.create({
+      data: {
+        body,
+        sender: MessageSender.customer,
+        ticketId: existing.id,
+      },
+    });
     res.status(200).json({ ticketId: existing.id });
     return;
   }

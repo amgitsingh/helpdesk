@@ -74,6 +74,12 @@ export const ticketUpdateSchema = z.object({
   category:     z.nativeEnum(TicketCategory).nullable().optional(),
 });
 
+export const createMessageSchema = z.object({
+  body: z.string().trim().min(1, 'Reply cannot be empty'),
+});
+
+export type CreateMessageInput = z.infer<typeof createMessageSchema>;
+
 export const inboundEmailSchema = z.object({
   senderEmail: z.string().email(),
   senderName: z.string().trim().min(1),

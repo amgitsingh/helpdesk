@@ -125,6 +125,7 @@ Nav links visible only to admins: check `session?.user.role === Role.admin` inli
 - **shadcn/ui** — components in `client/src/components/ui/`. Add via `npx shadcn@latest add <component>` from `client/`. Path alias `@/` → `src/`.
 - **Forms** — use `defaultValues` in every `useForm` call (Zod v4 rejects `undefined` for string fields). Input component uses `React.forwardRef` for react-hook-form ref compatibility.
 - **Data fetching** — use **TanStack Query** (`useQuery`, `useMutation`) for all server state. Use **axios** for HTTP calls (installed in client). Always pass `withCredentials: true` to axios so cookies are sent. Never use raw `fetch` for API calls.
+- **React Query pattern** — axios calls must only appear inside `queryFn` / `mutationFn` callbacks, never directly in `useEffect` or event handlers. The standard pattern is: define a standalone `async function` that calls axios, then pass it as `queryFn` or `mutationFn`. Never call axios outside of a React Query hook.
 
 ## Testing Strategy
 

@@ -85,7 +85,7 @@ router.post(
     res.status(201).json({ ticketId: ticket.id });
 
     await boss.send(CLASSIFY_TICKET_QUEUE, { id: ticket.id, subject: ticket.subject, body: ticket.body });
-    await boss.send(AUTO_RESOLVE_TICKET_QUEUE, { id: ticket.id, subject: ticket.subject, body: ticket.body, senderName: ticket.senderName });
+    await boss.send(AUTO_RESOLVE_TICKET_QUEUE, { id: ticket.id, subject: ticket.subject, body: ticket.body, senderName: ticket.senderName, senderEmail: ticket.senderEmail });
   },
 );
 

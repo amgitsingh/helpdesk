@@ -6,6 +6,8 @@ import { requireAuth } from '../middleware/requireAuth';
 import { parseBody } from '../utils/parseBody';
 import prisma from '../lib/prisma';
 import { MessageSender, TicketStatus } from '../generated/prisma/client';
+import boss from '../lib/boss';
+import { SEND_EMAIL_QUEUE } from '../workers/sendEmailWorker';
 
 const router = Router();
 
@@ -116,7 +118,7 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
 
   const ticket = await prisma.ticket.findUnique({
     where: { id: String(req.params.id) },
-    select: { id: true },
+    select: { id: true, subject: true, senderEmail: true, senderName: true },
   });
 
   if (!ticket) {
@@ -141,6 +143,13 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
   });
 
   res.status(201).json(message);
+
+  await boss.send(SEND_EMAIL_QUEUE, {
+    to: ticket.senderEmail,
+    toName: ticket.senderName,
+    subject: `Re: ${ticket.subject}`,
+    text: data.body,
+  });
 });
 
 router.post('/:id/summarize', requireAuth, async (req, res) => {

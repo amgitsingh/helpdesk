@@ -8,6 +8,7 @@ export type AutoResolveTicketJob = {
   subject: string;
   body: string;
   senderName: string;
+  senderEmail: string;
 };
 
 export async function startAutoResolveTicketWorker(): Promise<void> {

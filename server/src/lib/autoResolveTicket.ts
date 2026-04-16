@@ -3,8 +3,10 @@ import { join } from 'path';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import prisma from './prisma';
+import boss from './boss';
 import { MessageSender, TicketStatus } from '../generated/prisma/client';
 import type { TicketModel } from '../generated/prisma/models/Ticket';
+import { SEND_EMAIL_QUEUE } from '../workers/sendEmailWorker';
 
 export const AI_AGENT_EMAIL = 'ai@helpdesk.internal';
 
@@ -14,7 +16,7 @@ const knowledgeBase = readFileSync(
 );
 
 export async function autoResolveTicket(
-  ticket: Pick<TicketModel, 'id' | 'subject' | 'body' | 'senderName'>,
+  ticket: Pick<TicketModel, 'id' | 'subject' | 'body' | 'senderName' | 'senderEmail'>,
 ): Promise<void> {
   const firstName = ticket.senderName.split(' ')[0];
 
@@ -77,6 +79,12 @@ Rules:
     await prisma.ticket.update({
       where: { id: ticket.id },
       data: { status: TicketStatus.resolved },
+    });
+    await boss.send(SEND_EMAIL_QUEUE, {
+      to: ticket.senderEmail,
+      toName: ticket.senderName,
+      subject: `Re: ${ticket.subject}`,
+      text: result.reply,
     });
   } else {
     // AI could not resolve — unassign so a human agent can pick it up

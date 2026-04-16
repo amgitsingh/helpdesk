@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { DashboardStats, DailyTicketCount } from '@helpdesk/core';
+import { cn } from '@/lib/utils';
 
 async function fetchStats(): Promise<DashboardStats> {
   const { data } = await axios.get<DashboardStats>('/api/stats', {
@@ -51,17 +52,26 @@ type StatCardProps = {
   icon: React.ReactNode;
   label: string;
   value: string | number;
+  accent?: string;
 };
 
-function StatCard({ icon, label, value }: StatCardProps) {
+function StatCard({ icon, label, value, accent }: StatCardProps) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center gap-3 pb-2">
-        <span className="text-muted-foreground">{icon}</span>
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-3xl font-bold tracking-tight">{value}</p>
+    <Card className="relative overflow-hidden">
+      {/* top accent line */}
+      <div className={cn('absolute inset-x-0 top-0 h-0.5', accent ?? 'bg-primary/60')} />
+      <CardContent className="pt-5 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              {label}
+            </p>
+            <p className="text-3xl font-bold tracking-tight">{value}</p>
+          </div>
+          <div className="shrink-0 h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center">
+            {icon}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
@@ -69,13 +79,16 @@ function StatCard({ icon, label, value }: StatCardProps) {
 
 function StatCardSkeleton() {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center gap-3 pb-2">
-        <Skeleton className="h-5 w-5 rounded" />
-        <Skeleton className="h-4 w-32" />
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-9 w-24" />
+    <Card className="relative overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-border" />
+      <CardContent className="pt-5 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-3 w-28 rounded" />
+            <Skeleton className="h-9 w-20 rounded" />
+          </div>
+          <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+        </div>
       </CardContent>
     </Card>
   );
@@ -93,12 +106,17 @@ export default function HomePage() {
   });
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+    <div className="max-w-5xl mx-auto px-5 py-7 space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Overview of your support operations
+        </p>
+      </div>
 
       {statsError && (
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-5">
             <p className="text-sm text-destructive">Failed to load dashboard stats.</p>
           </CardContent>
         </Card>
@@ -110,27 +128,27 @@ export default function HomePage() {
         ) : stats ? (
           <>
             <StatCard
-              icon={<Ticket size={18} />}
+              icon={<Ticket size={18} strokeWidth={2} />}
               label="Total Tickets"
               value={stats.totalTickets}
             />
             <StatCard
-              icon={<TicketCheck size={18} />}
+              icon={<TicketCheck size={18} strokeWidth={2} />}
               label="Open Tickets"
               value={stats.openTickets}
             />
             <StatCard
-              icon={<Bot size={18} />}
+              icon={<Bot size={18} strokeWidth={2} />}
               label="Resolved by AI"
               value={stats.aiResolvedTickets}
             />
             <StatCard
-              icon={<Percent size={18} />}
+              icon={<Percent size={18} strokeWidth={2} />}
               label="AI Resolution Rate"
               value={`${stats.aiResolvedPercentage}%`}
             />
             <StatCard
-              icon={<Clock size={18} />}
+              icon={<Clock size={18} strokeWidth={2} />}
               label="Avg. Resolution Time"
               value={formatDuration(stats.avgResolutionTimeMs)}
             />
@@ -140,38 +158,58 @@ export default function HomePage() {
 
       {/* Daily tickets bar chart */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">Tickets per Day — Last 30 Days</CardTitle>
+        <CardHeader className="pb-1">
+          <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Tickets per Day — Last 30 Days
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-2">
           {dailyError && (
             <p className="text-sm text-destructive">Failed to load chart data.</p>
           )}
-          {dailyPending && <Skeleton className="h-56 w-full rounded" />}
+          {dailyPending && <Skeleton className="h-56 w-full rounded-lg" />}
           {daily && (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={daily} margin={{ top: 4, right: 8, bottom: 4, left: -16 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="var(--color-chart-grid)"
+                />
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatAxisDate}
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
                   tickLine={false}
                   axisLine={false}
                   interval={4}
                 />
                 <YAxis
                   allowDecimals={false}
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <Tooltip
                   formatter={(value) => [value, 'Tickets']}
-                  labelFormatter={(label) => (typeof label === 'string' ? formatAxisDate(label) : label)}
-                  cursor={{ fill: 'hsl(var(--muted))' }}
+                  labelFormatter={(label) =>
+                    typeof label === 'string' ? formatAxisDate(label) : label
+                  }
+                  cursor={{ fill: 'var(--color-muted)', opacity: 0.6 }}
+                  contentStyle={{
+                    background: 'var(--color-card)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '8px',
+                    fontSize: 12,
+                    color: 'var(--color-foreground)',
+                  }}
                 />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+                <Bar
+                  dataKey="count"
+                  fill="var(--color-chart-1)"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={40}
+                />
               </BarChart>
             </ResponsiveContainer>
           )}

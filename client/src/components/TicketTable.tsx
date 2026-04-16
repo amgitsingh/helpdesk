@@ -22,23 +22,28 @@ import {
 const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
   [TicketStatus.new]: {
     label: "New",
-    className: "inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600",
+    className:
+      "inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400 ring-1 ring-inset ring-blue-200 dark:ring-blue-800/60",
   },
   [TicketStatus.processing]: {
     label: "Processing",
-    className: "inline-flex items-center rounded-md bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700",
+    className:
+      "inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400 ring-1 ring-inset ring-amber-200 dark:ring-amber-800/60",
   },
   [TicketStatus.open]: {
     label: "Open",
-    className: "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary",
+    className:
+      "inline-flex items-center rounded-md bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground shadow-sm",
   },
   [TicketStatus.resolved]: {
     label: "Resolved",
-    className: "inline-flex items-center rounded-md bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700",
+    className:
+      "inline-flex items-center rounded-md bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-800/60",
   },
   [TicketStatus.closed]: {
     label: "Closed",
-    className: "inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground",
+    className:
+      "inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-border",
   },
 };
 

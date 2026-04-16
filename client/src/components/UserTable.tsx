@@ -74,8 +74,8 @@ export function UserTable({ users, isPending, isError, onEdit, onDelete }: Props
                 <span
                   className={
                     user.role === Role.admin
-                      ? "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
-                      : "inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                      ? "inline-flex items-center rounded-md bg-primary/10 dark:bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-inset ring-primary/20"
+                      : "inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-border"
                   }
                 >
                   {user.role}

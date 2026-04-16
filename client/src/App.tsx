@@ -7,8 +7,12 @@ import TicketDetailPage from "./pages/TicketDetailPage";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import { useTheme } from "./hooks/useTheme";
 
 export default function App() {
+  // Initialize theme at root so it applies on all routes
+  useTheme();
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />

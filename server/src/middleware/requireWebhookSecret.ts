@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { RequestHandler } from 'express';
 
 export const requireWebhookSecret: RequestHandler = (req, res, next) => {
-  const provided = req.headers['x-webhook-secret'];
+  const provided = req.headers['x-webhook-secret'] || req.query.secret;
   const expected = process.env.WEBHOOK_SECRET!;
 
   if (

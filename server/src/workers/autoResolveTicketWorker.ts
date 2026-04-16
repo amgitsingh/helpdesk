@@ -12,7 +12,7 @@ export type AutoResolveTicketJob = {
 };
 
 export async function startAutoResolveTicketWorker(): Promise<void> {
-  await boss.createQueue(AUTO_RESOLVE_TICKET_QUEUE);
+  await boss.createQueue(AUTO_RESOLVE_TICKET_QUEUE, { retryLimit: 3, retryBackoff: true });
   await boss.work<AutoResolveTicketJob>(AUTO_RESOLVE_TICKET_QUEUE, async ([job]) => {
     await autoResolveTicket(job.data);
   });

@@ -11,7 +11,7 @@ export type SendEmailJob = {
 };
 
 export async function startSendEmailWorker(): Promise<void> {
-  await boss.createQueue(SEND_EMAIL_QUEUE);
+  await boss.createQueue(SEND_EMAIL_QUEUE, { retryLimit: 5, retryBackoff: true });
   await boss.work<SendEmailJob>(SEND_EMAIL_QUEUE, async ([job]) => {
     await sendEmail(job.data);
   });

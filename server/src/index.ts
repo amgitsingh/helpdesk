@@ -1,4 +1,5 @@
 import 'dotenv/config'; // must be first — loads env before any other module reads process.env
+import './instrument';  // Sentry — must be imported before any other modules
 import app from './app';
 import boss from './lib/boss';
 import { startClassifyTicketWorker } from './workers/classifyTicketWorker';

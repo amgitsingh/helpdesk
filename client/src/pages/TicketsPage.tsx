@@ -93,11 +93,11 @@ export default function TicketsPage() {
     searchInput !== "";
 
   return (
-    <div className="max-w-7xl p-6 mx-auto">
+    <div className="p-6 mx-auto max-w-7xl">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4">
           <CardTitle>Tickets</CardTitle>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2">
             <Input
               placeholder="Search tickets…"
               value={searchInput}

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -8,6 +9,7 @@ import usersRouter from './routes/users';
 import webhooksRouter from './routes/webhooks';
 import ticketsRouter from './routes/tickets';
 import statsRouter from './routes/stats';
+import sentryTunnelRouter from './routes/sentryTunnel';
 
 const app = express();
 
@@ -27,10 +29,15 @@ app.get('/api/me', requireAuth, (req, res) => {
   res.json(res.locals.session.user);
 });
 
+// Tunneling from Sentry's client SDKs to avoid CORS issues and expose a stable endpoint for clients to send events to
+app.use('/api/sentry-tunnel', sentryTunnelRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/webhooks', webhooksRouter);
 app.use('/api/tickets', ticketsRouter);
 app.use('/api/stats', statsRouter);
+
+// Sentry error handler — must come before the global error handler
+Sentry.setupExpressErrorHandler(app);
 
 // Global error handler — catches async errors forwarded by Express 5
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
